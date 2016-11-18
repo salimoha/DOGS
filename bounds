@@ -1,0 +1,12 @@
+import numpy as np
+import numpy.matlib
+def bounds(bnd1,bnd2,n):
+    bnds = np.matlib.repmat(bnd2,  2**n,1)
+    tt= np.mod(np.arange(2**n), 2**(n-ii)) <= 2**(n-ii-1)-1
+    for jj in range(len(tt)):
+        if tt[jj]==True:
+            print(jj)
+            bnds[ii,jj]=bnd1[ii];
+        print(ii)
+    return bnds
+    
