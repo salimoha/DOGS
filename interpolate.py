@@ -43,7 +43,7 @@ class Interpolate:
 def interpolateparametarization(xi,yi,inter_method=1,interpolate_index=0):
     n = xi.shape[0]
     m = xi.shape[1]
-    A = np.zeros(shape=(m,m))
+    A= np.zeros(shape=(m,m))
 
     for ii in range(0,m,1): # for ii =0 to m-1 with step 1; range(1,N,1)
         for jj in range(0,m,1):
@@ -71,12 +71,14 @@ def fun(x,  alpha=0.001):
 xi=np.random.rand(2,3)
 x=np.array([[0.5],[0.5]])
 yi=np.random.rand(1,3)
-#yi=fun(xi)
+yi=fun(xi)
 #yi = np.array(yi)
 print(yi.shape)
 print(xi.shape)
 inter_par = Interpolate("NPS")
 inter_par.parameterization(xi,yi)
+
+
 
 
 #interpolateparametarization(xi,yi,inter_method=1,interpolate_index=0)
