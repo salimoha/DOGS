@@ -1,6 +1,8 @@
 from __future__ import division
 import csv
 import numpy as np
+import matplotlib.pyplot as plt
+
 #     This file is part of DELTADOGS package.
 #     DELTADOGS is free software for global optimization of computationally expensive function evaluaitons
 #     you can redistribute it and/or modify
@@ -68,3 +70,13 @@ def readInputFile(filePath):
 x = readInputFile(data1FilePath)
 x = x[:10000]
 index = transient_detector(x)
+
+
+
+## sampled time intervals 1
+#t = np.arange(0., len(x))
+## red dashes transient detector, green curve simulation results of KSE
+#plt.plot(t, x, '-g')
+#plt.plot([index,index], [np.min(x)/2.0, np.max(x)], '--r')
+#plt.show()
+
