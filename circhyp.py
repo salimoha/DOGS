@@ -26,9 +26,9 @@ def circhyp(x,N):
 	print(xC)
 	R2 = (np.sum(D**2,axis=0) - 4 * a * c) / (4.0 * a ** 2)
 	print(R2)
-
+	return R2, xC
 
 x = np.array([[0.6443,    0.8116,    0.3507], [0.3786,    0.5328,    0.9390]]);
 N = 2;
 
-circhyp(x, N)
+[R2,xC] = circhyp(x, N)
