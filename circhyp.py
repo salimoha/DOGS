@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial import Delaunay
 
 def circhyp(x,N):
 #circhyp     Circumhypersphere of simplex
@@ -28,7 +29,20 @@ def circhyp(x,N):
 	print(R2)
 	return R2, xC
 
+def direc_uncer(x,xi,tri):
+    e=np.array([[0]]);
+    n = x.shape[0]
+    print(n)
+    for ind in range(tri.simplices.shape[1]):
+        [R2,xC] = circhyp(xi[:,tri.simplices[ind,:]],n)
+        e = np.max(e,R2- np.transpose((x-xC))*(x-xC)  )
+    return e
+
+
 x = np.array([[0.6443,    0.8116,    0.3507], [0.3786,    0.5328,    0.9390]]);
 N = 2;
 
 [R2,xC] = circhyp(x, N)
+tri = Delaunay(x.T)
+xx = np.array([[0.5], [0.5]]);
+e = direc_uncer(xx,x,tri)
