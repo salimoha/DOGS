@@ -317,7 +317,19 @@ class Inter:
 #     g=g+v(2:end);
 # end
 # end
-
+      def hessian(self,x):
+          n = x.shape[0]
+          if self.method =="NPS" || self.method ==1:
+             w=self.w; 
+             xi = self.xi;
+             N = x.shape[1]
+             H = np.zeors((n))
+             for ii in range(N):
+                 X = x - xi[:,ii]
+                 if np.linalg.norm(X) > 1e-5:
+                    H = H + 3*w[ii]*((X*X.T)/np.linalg.norm(X)  +  np.linalg.norm(X)*np.identity(n))
+             return H
+ 
 # ###############################################################################
 # function H = interpolate_hessian(x,inter_par)
 # n=length(x);
