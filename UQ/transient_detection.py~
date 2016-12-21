@@ -74,9 +74,9 @@ index = transient_detector(x)
 
 
 ## sampled time intervals 1
-t = np.arange(0., len(x))
-# red dashes transient detector, green curve simulation results of KSE
-plt.plot(t, x, '-g')
-plt.plot([index,index], [np.min(x)/2.0, np.max(x)], '--r')
-plt.show()
+#t = np.arange(0., len(x))
+## red dashes transient detector, green curve simulation results of KSE
+#plt.plot(t, x, '-g')
+#plt.plot([index,index], [np.min(x)/2.0, np.max(x)], '--r')
+#plt.show()
 

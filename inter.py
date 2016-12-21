@@ -267,9 +267,20 @@ class Inter:
                  X = x-xi[:,ii]
                  g = g + 3*w[ii]*X*np.norm(X) # ??? norm???? 
              g = g + 3*w(ii)*X*np.norm(X)
-
+             return g
 
           if self.method == "MAPS" || self.method==7:
+
+             w = self.w 
+             v = self.v
+             N=x.shape[1]
+             xi = self.xi 
+             g = np.zeros((n, 1))
+             for ii in range(N):
+                 X = x-xi[:,ii]
+                 g = g + 3*w[ii]*X*np.norm(X) # ??? norm???? 
+             g = g + 3*w(ii)*X*np.norm(X)
+#             TODO 
 
 
 # function g = interpolate_grad(x,inter_par)
