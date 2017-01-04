@@ -224,7 +224,7 @@ class Inter:
             N = xi.shape[1]
             H = np.zeros((n,n))
             for ii in range(N):
-                X = x - xi[:,ii]
+                X = x[:,0] - xi[:,ii]
                 if np.linalg.norm(X) > 1e-5:
                     H = H + 3*w[ii]*((X*X.T)/np.linalg.norm(X)  +  np.linalg.norm(X)*np.identity(n))
             return H
