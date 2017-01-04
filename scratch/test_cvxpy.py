@@ -11,7 +11,8 @@ b = numpy.random.randn(m)
 # Construct the problem.
 x = Variable(n)
 objective = Minimize(sum_squares(A*x - b))
-constraints = [0 <= x, x <= 1]
+#constraints = [0 <= x, x <= 1]
+constraints = [numpy.zeros((n,1)) <= x, x <= numpy.ones((n,1))]
 prob = Problem(objective, constraints)
 
 # The optimal objective is returned by prob.solve().
