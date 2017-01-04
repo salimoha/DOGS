@@ -7,7 +7,7 @@ def circhyp(x,N):
 #   and the square of the radius of the N-dimensional hypersphere
 #   encircling the simplex defined by its N+1 vertices.
 #   Author: Shahoruz Alimohammadi
-#   Modified: Dec., 2016
+#   Modified: Jan., 2017
 #   DELTADOGS package
     
 	test = np.sum(np.transpose(x)**2,axis=1)
@@ -24,25 +24,28 @@ def circhyp(x,N):
     #print(np.linalg.det(M_tmp))
 	#print(D)
 	xC = -D / (2.0 * a)
-	print(xC)
+#	print(xC)
 	R2 = (np.sum(D**2,axis=0) - 4 * a * c) / (4.0 * a ** 2)
-	print(R2)
+#	print(R2)
 	return R2, xC
 
 def direc_uncer(x,xi,tri):
-    e=np.array([[0]]);
+    e=np.array([[0.0]]);
     n = x.shape[0]
-    print(n)
-    for ind in range(tri.simplices.shape[1]):
+#    print(n)
+    for ind in range(tri.simplices.shape[0]):
         [R2,xC] = circhyp(xi[:,tri.simplices[ind,:]],n)
-        e = np.max(e,R2- np.transpose((x-xC))*(x-xC)  )
+        e = np.array([e,(R2- np.dot(np.transpose((x-xC)), x-xC)) ]).max()
     return e
 
-
-x = np.array([[0.6443,    0.8116,    0.3507], [0.3786,    0.5328,    0.9390]]);
 N = 2;
-
+x = np.array([[0.6443,    0.8116,    0.3507], [0.3786,    0.5328,    0.9390]]);
 [R2,xC] = circhyp(x, N)
+
+
+x = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
 tri = Delaunay(x.T)
 xx = np.array([[0.5], [0.5]]);
 e = direc_uncer(xx,x,tri)
+print("---Global e -----")
+print(e)
