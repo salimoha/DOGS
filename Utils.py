@@ -98,3 +98,92 @@ def circhyp(x, N):
     R2 = (np.sum(D ** 2, axis=0) - 4 * a * c) / (4.0 * a ** 2)
     #	print(R2)
     return R2, xC
+
+
+class Inter_par():
+    def __init__(self, method="NPS", w=0, v=0, xi=0, a=0):
+        self.method = "NPS"
+        self.w = []
+        self.v = []
+        self.xi = []
+        self.a = []
+
+
+def interpolateparameterization(xi, yi, inter_par):
+    n = xi.shape[0]
+    m = xi.shape[1]
+    if inter_par.method == 'NPS':
+        A = np.zeros(shape=(m, m))
+        for ii in range(0, m, 1):  # for ii =0 to m-1 with step 1; range(1,N,1)
+            for jj in range(0, m, 1):
+                A[ii, jj] = (np.dot(xi[:, ii] - xi[:, jj], xi[:, ii] - xi[:, jj])) ** (3.0 / 2.0)
+
+        V = np.concatenate((np.ones((1, m)), xi), axis=0)
+        A1 = np.concatenate((A, np.transpose(V)), axis=1)
+        A2 = np.concatenate((V, np.zeros(shape=(n + 1, n + 1))), axis=1)
+        yi = yi[np.newaxis, :]
+        # print(yi.shape)
+        b = np.concatenate([np.transpose(yi), np.zeros(shape=(n + 1, 1))])
+        #      b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
+        A = np.concatenate((A1, A2), axis=0)
+        wv = np.linalg.solve(A, b)
+        inter_par.w = wv[:m]
+        inter_par.v = wv[m:]
+        inter_par.xi = xi
+        return inter_par
+        #      print(V)
+
+def interpolate_val(x, inter_par):
+    if inter_par.method == "NPS":
+        w = inter_par.w
+        v = inter_par.v
+        xi = inter_par.xi
+
+        S = xi - x
+        #             print np.dot(v.T,np.concatenate([np.ones((1,1)),x],axis=0)) + np.dot(w.T,np.sqrt(np.diag(np.dot(S.T,S))))**3
+        return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
+
+def interpolate_grad(x, inter_par):
+    if inter_par.method == "NPS":
+        w = inter_par.w
+        v = inter_par.v
+        xi = inter_par.xi
+        n = x.shape[0]
+        N = xi.shape[1]
+        g = np.zeros((n))
+        for ii in range(N):
+            X = x[:, 0] - xi[:, ii]
+            g = g + 3 * w[ii] * X.T * np.linalg.norm(X)
+        # print("--------------")
+        #                 print v[ii]
+        #             print(g)
+        #             print("--------------")
+        #             print(v[1:])
+        g = g + v[1:, 0]
+
+        return g.T
+
+def interpolate_hessian(x, inter_par):
+    if inter_par.method == "NPS" or self.method == 1:
+        w = inter_par.w
+        v = inter_par.v
+        xi = inter_par.xi
+        n = x.shape[0]
+        N = xi.shape[1]
+        g = np.zeros((n))
+        n = x.shape[0]
+
+        H = np.zeros((n, n))
+        for ii in range(N):
+            X = x[:, 0] - xi[:, ii]
+            if np.linalg.norm(X) > 1e-5:
+                H = H + 3 * w[ii] * ((X * X.T) / np.linalg.norm(X) + np.linalg.norm(X) * np.identity(n))
+        return H
+
+
+
+def fun(x, alpha=0.01):
+    y = np.array((x[0, :] - 0.45) ** 2.0 + alpha * (x[1, :] - 0.45) ** 2.0)
+    return y.T
+
+#    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
