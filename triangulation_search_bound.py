@@ -5,29 +5,8 @@ import pandas as pd;
 
 pd.options.display.max_rows = 20;
 pd.options.display.expand_frame_repr = False
+import pylab as plt
 
-from Utils import *
-
-"""
-This is the toy example problem in the SNOPT documentation.
-     min         x1
-     s.t   .   x1**2 + 4x2**2 <= 4
-           (x1-2)**2 +  x2**2 <= 5
-            x1 >=0
-
-We define the function F(x):
-   F(x)  = [     x1             ]
-           [     x1**2 + 4x2**2 ]
-           [ (x1-2)**2 +  x2**2 ]
-with ObjRow = 1 to indicate the objective.
-
-The Jacobian is:
-  F'(x)  = [   1       0  ]   [ 1 0 ]    [   0       0  ]
-           [   2x1    8x2 ] = [ 0 0 ]  + [   2x1    8x2 ]
-           [ 2(x1-2)  2x2 ]   [ 0 0 ]    [ 2(x1-2)  2x2 ]
-                             linear(A)     nonlinear (G)
-
-"""
 
 import numpy           as np
 import scipy.sparse    as sp
@@ -61,8 +40,8 @@ def interpolateparameterization(xi, yi, inter_par):
         # yi = yi[np.newaxis, :]
         # print(yi.shape)
         # b = np.concatenate([np.transpose(yi), np.zeros(shape=(n + 1, 1))])
-        b = np.concatenate([yi, np.zeros(shape=(n + 1, 1))])
-        # b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
+        # b = np.concatenate([yi, np.zeros(shape=(n + 1, 1))])
+        b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
         A = np.concatenate((A1, A2), axis=0)
         wv = np.linalg.solve(A, b)
         inter_par.w = wv[:m]
@@ -79,7 +58,7 @@ def interpolate_val(x, inter_par):
         w = inter_par.w
         v = inter_par.v
         xi = inter_par.xi.values
-
+        x = pd.DataFrame(x)
         # xi = inter_par.xi
         # print("-------------")
         # print(x)
@@ -96,6 +75,7 @@ def interpolate_grad(x, inter_par):
         w = inter_par.w
         v = inter_par.v
         xi = inter_par.xi.values
+        x=pd.DataFrame(x)
         x = x.values
         n = x.shape[0]
         N = xi.shape[1]
@@ -140,16 +120,17 @@ def inter_min(x,inter_par, Ain=[], bin=[]):
     n = x.shape[0]
 #     start the serafh method
     iter = 0
+    # x = pd.DataFrame((x))
     x0 = np.zeros((n, 1))
     # while iter < 10:
     H = np.zeros((n, n))
     g = np.zeros((n, 1))
     y = interpolate_val(x, inter_par)
     g = interpolate_grad(x, inter_par)
-    H = interpolate_hessian(x, inter_par)
+    #H = interpolate_hessian(x, inter_par)
         # Perform the Hessian modification
-    H = modichol(H, 0.01, 20);
-    H = (H + H.T)/2.0
+    #H = modichol(H, 0.01, 20);
+    #H = (H + H.T)/2.0
 #         optimizaiton for finding hte right direction
     objfun3 = lambda x: (interpolate_val(x, inter_par))
     grad_objfun3 = lambda x:  interpolate_grad(x, inter_par)
@@ -176,6 +157,33 @@ def sntoya_objFG(status, x):
     return status, F, G
 
 
+#
+# function [x y CS]=Constant_K_Search_snopt(x,inter_par_, inter_Par_,xc_,R2_,Search)
+# % This funciton finds the minimizer of the search function i a simplex
+# %              minimize s^k_i(x) = p^k(x) - K e^k_i(x)
+# %             subject to CS^k_(l,i) = g^k_l(x) - K e^k_i(x) <= 0
+# %                        A x <= b
+# % input:
+# % x: interpolating initial point for search function
+# % inter_par: interpolation parameters
+# % xc: circumcenter for the simplex that x is located at
+# % R2: square of circumradiaus for the simplex that x is located at
+# % output:
+# % x: the minimizer of search function
+# % y: minimum of search fucntion at x
+# % cse:
+# % created by: Shahrouz Alimo & Pooriya Beyhaghi
+# % last modification: Oct/7/2015
+# %
+
+# function [x,y] = Adoptive_K_Search_new(x,inter_par,xc,R2,y0)
+# % Find the minimizer of the search function in a simplex
+#
+# fun=@(x) cost(x,inter_par,xc,R2,y0);
+# options = optimoptions(@fmincon,'Algorithm','sqp','GradObj','On','DerivativeCheck','Off');
+# [x,y] = fmincon(fun,x,[],[],[],[],x*0, x*0+1,[], options);
+# end
+#
 
 # x = pd.DataFrame(x)
 
@@ -217,7 +225,6 @@ def Adoptive_K_Search(x, inter_par, xc, R2, y0):
     return res.x, res.fun
 
 
-
 xiT = hstack((xU,xE))
 def  tringulation_search_bound(inter_par,xiT,ind_min,y0):
     xiT  = pd.DataFrame(xiT)
@@ -229,147 +236,55 @@ def  tringulation_search_bound(inter_par,xiT,ind_min,y0):
     return xm, ym, cse
 
 
-
-
-
-# p=interpolate_val(x,inter_par);
-# e=R2-(x-xc)'*(x-xc);
-# M=-e/(p-y0);
-# if p<y0
-#     M=-inf;
+# function[xm
+# ym
+# cse] = tringulation_search_bound(inter_par, xiT, ind_min)
+#
+# global n
+# y0
+# % keyboard
+# [xm, ym] = inter_min(xiT(:, ind_min), inter_par);
+# if (ym > y0)
+#     ym = inf;
+#     cse = 2;
+# tri = delaunayn(xiT.
+# ');
+# for ii=1:size(tri, 1)
+# [xc, R2] = circhyp2(xiT(:, tri(ii,:)), n);
+# if R2~=inf
+# % initialization with body center of each simplex
+# x=xiT(:,
+#     tri(ii,:))*ones(n + 1, 1) / (n + 1);
+# % [x, ym] = Adoptive_K_Search(x, inter_par, xc, R2);
+# Sc(ii) = (interpolate_val(x, inter_par) - y0) / (R2 - norm(x - xc) ^ 2);
+# Scl(ii) = Sc(ii);
+# if ismember(ind_min, tri(ii,:))~ = 1
+# Scl(ii) = inf;
 # end
-
-inf = 1.0e20
-
-snopt = SNOPT_solver()
-
-snopt.setOption('Verbose', True)
-snopt.setOption('Solution print', True)
-snopt.setOption('Print file', 'sntoya.out')
-
-# Either dtype works, but the names for x and F have to be of
-# the correct length, else they are both ignored by SNOPT:
-xNames = np.array(['      x0', '      x1'])
-FNames = np.array(['      F0', '      F1', '      F2'], dtype='c')
-
-x0 = np.array([1.0, 1.0])
-
-xlow = np.array([0.0, -inf])
-xupp = np.array([inf, inf])
-
-Flow = np.array([-inf, -inf, -inf])
-Fupp = np.array([inf, 4.0, 5.0])
-
-ObjRow = 1
-status = []
-
-
-
-# A and G provide the linear and nonlinear components of
-# the Jacobian matrix, respectively. Here, G and A are given
-# as dense matrices.
+# else
+# Sc(ii) = inf;
+# Scl(ii) = inf;
+# end \
+# % [x, ym] = Adoptive_K_Search(x, inter_par, xc, R2);
+# end
+# [t, ind] = min(Sc);
+# [xc, R2] = circhyp(xiT(:, tri(ind,:)), n);
+# x = xiT(:, tri(ind,:))*ones(n + 1, 1) / (n + 1);
+# % keyboard
+# [xm, ymg] = Adoptive_K_Search_new(x, inter_par, xc, R2, y0);
+# [t, ind] = min(Scl);
+# [xc, R2] = circhyp(xiT(:, tri(ind,:)), n);
+# x = xiT(:, tri(ind,:))*ones(n + 1, 1) / (n + 1);
+# [xml, yml] = Adoptive_K_Search_new(x, inter_par, xc, R2, y0);
+# if yml < 2 * ymg
+# xm = xml;
+# end
+# end
 #
-# For the nonlinear components, enter any nonzero value to
-# indicate the location of the nonlinear deriatives (in this case, 2).
-# A must be properly defined with the correct derivative values.
-
-A = np.array([[0, 1],
-              [0, 0],
-              [0, 0]])
-
-G = np.array([[0, 0],
-              [2, 2],
-              [2, 2]])
-
-# Alternatively, A and G can be input in coordinate form via scipy's
-# coordinate matrix
-# A = sp.coo_matrix(A)
-# G = sp.coo_matrix(G)
-# or explicitly in coordinate form
-#  iAfun = row indices of A
-#  jAvar = col indices of A
-#  A     = matrix values of A
+# end
 #
-#  iGfun = row indices of G
-#  jGvar = col indices of G
-
-objfun = lambda status,x: (status, costSearch(x,inter_par,xC,R2,y0) )
-grad_objfun  = lambda status,x: (status, kgradSearch(x,inter_par,xC,R2,y0))
-
-
-# snopt.snopta(name='sntoyaFG', usrfun=sntoya_objFG, x0=x0, xlow=xlow, xupp=xupp,
-#              Flow=Flow, Fupp=Fupp, ObjRow=ObjRow, A=A, G=G, xnames=xNames, Fnames=FNames)
 #
-# snopt.snopta(name='sntoyaFG', usrfun=grad_objfun, x0=x0, xlow=xlow, xupp=xupp,
-#              Flow=Flow, Fupp=Fupp, ObjRow=ObjRow, A=A, G=G, xnames=xNames, Fnames=FNames)
 
-
-#######
-xx = xi[:,:3]
-[R2,xC] = circhyp(xx,2)
-
-y0 = 0
-inter_par = Inter_par()
-xi = pd.DataFrame(xi)
-yi = pd.DataFrame(yi)
-inter_par = interpolateparameterization(xi,yi,inter_par)
-[xm, ym]= Adoptive_K_Search(x, inter_par, xC, R2, y0)
-
-
-
-
-# We first solve the problem without providing derivative info
-# snopt.snopta(name=' sntoyaF', x0=x1, xlow=xlow, xupp=xupp,
-#              usrfun=objfun, J=grad_objfun,  A=A, G=G, xnames=xNames, Fnames=FNames)
-
-# Now we set up the derivative structures...
-objfun2 = lambda x: (costSearch(x, inter_par, xC, R2, y0))
-grad_objfun2  = lambda x: kgradSearch(x,inter_par,xC,R2,y0)
-
-def DOGS_objFG(status, x):
-    # F = np.concatenate(((objfun2(x), grad_objfun2(x))), axis=1).T
-    # F = np.array([x[1],  # objective row
-    #               x[0] ** 2 + 4.0 * x[1] ** 2,
-    #               (x[0] - 2.0) ** 2 + x[1] ** 2])
-    # G = np.array([2 * x[0], 8 * x[1], 2 * (x[0] - 2), 2 * x[1]])
-
-    F = objfun2(x)
-    G = grad_objfun2(x)
-
-    return status, F.T, G.T
-
-
-"""
-This is the toy example problem in the SNOPT documentation.
-     min         x1
-     s.t   .   x1**2 + 4x2**2 <= 4
-           (x1-2)**2 +  x2**2 <= 5
-            x1 >=0
-
-We define the function F(x):
-   F(x)  = [     x1             ]
-           [     x1**2 + 4x2**2 ]
-           [ (x1-2)**2 +  x2**2 ]
-with ObjRow = 1 to indicate the objective.
-
-The Jacobian is:
-  F'(x)  = [   1       0  ]   [ 1 0 ]    [   0       0  ]
-           [   2x1    8x2 ] = [ 0 0 ]  + [   2x1    8x2 ]
-           [ 2(x1-2)  2x2 ]   [ 0 0 ]    [ 2(x1-2)  2x2 ]
-                             linear(A)     nonlinear (G)
-
-"""
-
-# DOGS_objFG
-# sntoya_objFG
-snopt.snopta(name='sntoyaFG', usrfun=sntoya_objFG, x0=x0, xlow=xlow, xupp=xupp,
-             Flow=Flow, Fupp=Fupp, ObjRow=ObjRow, A=A, G=G, xnames=xNames, Fnames=FNames)
-
-
-y01 = sntoya_objF(status, x0)
-y01= grad_objfun(status, x0)
-print(y01)
-# quit()
 
 
 
