@@ -187,3 +187,9 @@ def fun(x, alpha=0.01):
     return y.T
 
 #    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
+
+
+def vertex_find(A,b,lb,up):
+
+
+    return Vertex

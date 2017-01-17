@@ -79,7 +79,7 @@ def interpolate_val(x, inter_par):
         w = inter_par.w
         v = inter_par.v
         xi = inter_par.xi.values
-
+        x = pd.DataFrame(x)
         # xi = inter_par.xi
         # print("-------------")
         # print(x)
@@ -96,7 +96,8 @@ def interpolate_grad(x, inter_par):
         w = inter_par.w
         v = inter_par.v
         xi = inter_par.xi.values
-        x = x.values
+        x = pd.DataFrame(x).values
+        # x = x.values
         n = x.shape[0]
         N = xi.shape[1]
         g = np.zeros((n))
@@ -146,10 +147,10 @@ def inter_min(x,inter_par, Ain=[], bin=[]):
     g = np.zeros((n, 1))
     y = interpolate_val(x, inter_par)
     g = interpolate_grad(x, inter_par)
-    H = interpolate_hessian(x, inter_par)
+    # H = interpolate_hessian(x, inter_par)
         # Perform the Hessian modification
-    H = modichol(H, 0.01, 20);
-    H = (H + H.T)/2.0
+    # H = modichol(H, 0.01, 20);
+    # H = (H + H.T)/2.0
 #         optimizaiton for finding hte right direction
     objfun3 = lambda x: (interpolate_val(x, inter_par))
     grad_objfun3 = lambda x:  interpolate_grad(x, inter_par)
