@@ -1,6 +1,21 @@
+
+
+import numpy as np
+
+np.set_printoptions(linewidth=200, precision=5, suppress=True)
+import pandas as pd;
+
+pd.options.display.max_rows = 20;
+pd.options.display.expand_frame_repr = False
+import pylab as plt
+import numpy.matlib
+
+import Utils as utl
+
+
 def points_neighbers_find(x,xE,xU):
 
-	[delta_general, index,x1] = mindis(x, np.concatenate((xE,xU ), axis=0) )
+	[delta_general, index,x1] = utl.mindis(x, np.concatenate((xE,xU ), axis=0) )
 
 	
 
