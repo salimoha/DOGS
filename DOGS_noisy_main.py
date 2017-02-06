@@ -59,6 +59,14 @@ L=L0
 for k in range(iter_max):
     [inter_par, yp] = regressionparametarization(xE, yE, sigma0/ np.sqrt(T), inter_method);
     K0 = np.ptp(yE, axis=1)
+    [yt, ind_out] = np.min(yp + sigma0*1.0/ np.square(T))
+    sd = np.min(yp, 2 * yE - yp) - L * sigma0. / np.square(T);
+    ypmin = np.min(yp)
+    ind_min = np.argmin(yp)
+    yd = np.min(sd)
+    ind_exist = np.argmin(sd)
+    xd = xE[:, ind_exist]
+
 
 
 
