@@ -56,14 +56,14 @@ for ff in range(nff):
         yr[ii] = funr(lb+(ub-lb)*xE[:,ii])
         T[ii] = 1
 
-    SigmaT = sigma0 / np.sqrt(T)
+    SigmaT = sigma0 / np.square(T)
     xU = Utils.bounds(np.zeros(n,1),np.ones(n,1),n)
 
     # initialize Nm, L, K
     L=L0
 
     for k in range(iter_max):
-        [inter_par, yp] = Utils.regressionparametarization(xE, yE, sigma0/ np.sqrt(T), inter_method)
+        [inter_par, yp] = Utils.regressionparametarization(xE, yE, sigma0/ np.square(T), inter_method)
 
         K0 = np.ptp(yE, axis=0)
 
@@ -85,7 +85,7 @@ for ff in range(nff):
             yE[ind_exist] = ((fun(xd)) + yE(ind_exist) * T(ind_exist)) / (T(ind_exist)+1)
             T[ind_exist] = T(ind_exist)+1
         else:
-            tmp1 = sigma0 / sd.sqrt(T(ind_exist))
+            tmp1 = sigma0 / sd.square(T(ind_exist))
             tmp2 = 0.01 * range(yE) * (max(ub - lb)) / Nm
             if tmp1 < tmp2:
                 yd = np.inf
@@ -144,11 +144,11 @@ for ff in range(nff):
                     yE = [yE, fun(lb + (ub - lb) * xc)]
                     T = [T, 1]
                     yr = [yr, funr(lb + (ub - lb) * xc)]
-                    SigmaT = sigma0 / np.sqrt(T)
+                    SigmaT = sigma0 / np.square(T)
                 else:
                     yE[ind_exist] = ((fun(lb + (ub - lb) * xd)) + yE[ind_exist] * T[ind_exist]) / (T[ind_exist] + 1)
                     T[ind_exist] = T[ind_exist] + 1
-                    SigmaT = sigma0 / np.sqrt(T)
+                    SigmaT = sigma0 / np.square(T)
 
         regret[ff, k] = np.amin(yr, 0)
         estimate[ff, k] = yE[ind_out]
