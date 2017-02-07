@@ -58,7 +58,7 @@ def stationary_statistical_learning_reduced(x,m):
     return theta,moment2_model,corr_model,sigmac2, sigma2_N
 
 #%%
-def Loss_fun_reduced_exact(tau,sigmac2):
+def Loss_fun_reduced(tau,sigmac2):
 #   This function minimizes the linear part of the loss function that is a least square fit for the varaince of time averaging errror
 #   This is done using alternative manimization as fixing the tau value fixed.
 #   Autocorrelation function is rho = A_1 tau_1^k + ... +A_m tau_m^k
@@ -80,11 +80,11 @@ def Loss_fun_reduced_exact(tau,sigmac2):
     b = np.vstack(( 0*np.ones([m,1]),1))
     
     A_lambda = np.dot(np.linalg.pinv(Ah),b)
-    A = np.copy(A_lambda[:3])
+    A = np.copy(A_lambda[:m])
     L = 0.5 * np.dot(A.T, np.dot(H , A))
     return L
 
-def Loss_fun_reduced(tau,sigmac2):
+def Loss_fun_reduced2(tau,sigmac2):
 #   This function minimizes the linear part of the loss function that is a least square fit for the varaince of time averaging errror
 #   This is done using alternative manimization as fixing the tau value fixed.
 #   Autocorrelation function is rho = A_1 tau_1^k + ... +A_m tau_m^k
