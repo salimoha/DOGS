@@ -92,11 +92,18 @@ def interpolateparameterization(xi, yi, inter_par):
         V = np.concatenate((np.ones((1,m)), xi), axis=0)
         A1 = np.concatenate((A, np.transpose(V)),axis=1)
         A2 = np.concatenate((V, np.zeros(shape=(n+1,n+1) )), axis=1)
-        yi = yi[np.newaxis,:]
-        # print(yi.shape)
-        b = np.concatenate([np.transpose(yi), np.zeros(shape=(n+1,1))])
-        #      b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
+        #TODO Later understand the bug...
+        if n>1:
+            yi = yi[np.newaxis,:]
+#        print(yi.shape)
+    
+#        b = np.concatenate([np.transpose(yi), np.zeros(shape=(n+1,1))])
+        b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
+#        print(yi.shape)
+#        print('------------------------------------------------$$$$$-------------')
         A = np.concatenate((A1,A2), axis=0)
+#        print('------------------------------------------------$$$$$-------------')
+#        print(A.shape)
         wv = np.linalg.solve(A,b)
         inter_par.w = wv[:m]
         inter_par.v = wv[m:]
@@ -110,15 +117,36 @@ def fun(x,  alpha=0.01):
 #    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
 
 
+#inter_par = Inter_par("NPS")
+#xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
+##xi=np.random.rand(2,3)
+#x=np.array([[0.5],[0.5]])
+##yi=np.random.rand(1,3)
+#yi=fun(xi)
+#print (yi)
+##yi = np.array(yi)
+#print(yi.shape)
+#print(xi.shape)
+#
+#inter_par = interpolateparameterization(xi, yi, inter_par)
+#%%
+def fun(x):
+    y = np.array(x-0.45)**2.0 
+    return y
+    
+#    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
+
+
 inter_par = Inter_par("NPS")
-xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
+xi = np.array([[0.5000 , 0.8000   , 0.2000,    0.6000]] )
 #xi=np.random.rand(2,3)
-x=np.array([[0.5],[0.5]])
+x=np.array([[0.5]])
 #yi=np.random.rand(1,3)
 yi=fun(xi)
-print yi
-#yi = np.array(yi)
-print(yi.shape)
-print(xi.shape)
+#print (yi)
+##yi = np.array(yi)
+#print(yi.shape)
+#print(xi.shape)
 
 inter_par = interpolateparameterization(xi, yi, inter_par)
+print(inter_par.w)
