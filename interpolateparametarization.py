@@ -111,24 +111,24 @@ def interpolateparameterization(xi, yi, inter_par):
         return inter_par
         #      print(V)
 
-def fun(x,  alpha=0.01):
+def fun(x,  alpha=0.1):
     y = np.array((x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0)
     return y.T
 #    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
 
 
-#inter_par = Inter_par("NPS")
-#xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
-##xi=np.random.rand(2,3)
+inter_par = Inter_par("NPS")
+xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
+#xi=np.random.rand(2,3)
 #x=np.array([[0.5],[0.5]])
-##yi=np.random.rand(1,3)
-#yi=fun(xi)
-#print (yi)
-##yi = np.array(yi)
+#yi=np.random.rand(1,3)
+yi=fun(xi)
+print (yi)
+#yi = np.array(yi)
 #print(yi.shape)
 #print(xi.shape)
 #
-#inter_par = interpolateparameterization(xi, yi, inter_par)
+inter_par = interpolateparameterization(xi, yi, inter_par)
 #%%
 def fun(x):
     y = np.array(x-0.45)**2.0 

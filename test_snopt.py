@@ -182,9 +182,9 @@ def sntoya_objFG(status, x):
 
 # Search function for adaptive K
 def costSearch(x,inter_par,xc,R2,y0):
-    x = pd.DataFrame(x)
+    # x = pd.DataFrame(x)
     p = interpolate_val(x,inter_par)
-    x = x.values
+    # x = x.values
     e = R2 - np.dot((x-xc).T, (x-xc))
     Mm = -e*1.0/(p-y0)
     M = pd.DataFrame(Mm).values
@@ -194,13 +194,13 @@ def costSearch(x,inter_par,xc,R2,y0):
 
 def kgradSearch(x,inter_par,xc,R2,y0):
     # gets x as a np.array element
-    x = pd.DataFrame(x)
+    # x = pd.DataFrame(x)
     p = interpolate_val(x,inter_par)
     gp = interpolate_grad(x, inter_par)
     # x = x.values
     e = R2 - np.dot((x-xc).T, (x-xc))
     ge = -2 * (x - xc)
-    ge=ge.values
+    # ge=ge.values
     # gp = np.expand_dims(gp, axis=1)
     DMm = -ge / (p - y0) + e * gp / (p - y0)**2.0
     DM = pd.DataFrame(DMm)
