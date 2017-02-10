@@ -132,13 +132,15 @@ def interpolate_val(x, inter_par):
         print(xi.shape)
         print(x.shape)
         print("-------!!!!!-------")
+        print(type(xi))
+        print(type(x))
         print(xi-x)
         print("-------!!!!!---%%%%%$$$$$$$$$$$$$$$$$$$$$----")
         # print(x)
         try:
             S = xi - x
         except:
-            S =  xi - np.tile(x,xi.shape[1])
+            S =  xi - np.tile(x.reshape(-1,1),xi.shape[1])
         #             print np.dot(v.T,np.concatenate([np.ones((1,1)),x],axis=0)) + np.dot(w.T,np.sqrt(np.diag(np.dot(S.T,S))))**3
         return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
 #%%
