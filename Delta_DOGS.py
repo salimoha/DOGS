@@ -4,6 +4,11 @@ np.set_printoptions(linewidth=200, precision=5, suppress=True)
 import pandas as pd;
 
 import Utils as utl
+"""
+Modified Feb 10 2017
+
+@author: Shahrouzalimo & KimuKook
+"""
 
 pd.options.display.max_rows = 20;
 pd.options.display.expand_frame_repr = False
@@ -19,23 +24,41 @@ bnd1 = np.copy(lob)
 bnd2 = np.copy(upb)
 
 m = 2*n
-
-iter_max = 300
-Ain = vstack((np.eye((n)),-np.eye((n))))
-bin = vstack((bnd2,-bnd1))
+K=10
+iter_max = 10
+Ain = np.vstack((np.eye((n)),-np.eye((n))))
+bin = np.vstack((bnd2,-bnd1))
 
 xU = utl.bounds(bnd1,bnd2,n)
 # inter_method = 1;
 
+inter_par = Inter_par("NPS")
 
-Initial_point = hstack((0.5*np.ones((n, 1)),  0.3*ones((n, 1))))
+Initial_point = np.hstack((0.5*np.ones((n, 1)),  0.3*np.ones((n, 1))))
 xE = Initial_point[:,0]
 xe=pd.DataFrame((xE))
 xE = xe.values
 delta0 = 0.2
 Ae = np.kron(np.ones((1,n)), xE) + delta0*np.eye((n))
-xE = hstack((xE , Ae))
+xE = np.hstack((xE , Ae))
+# for ii in range(1,xE.shape[1],1):
+#     yE[0,ii] = fun(xE[:,ii])
+yE = fun(xE)
 
+for kk in range(iter_max):
+
+    inter_par = interpolateparameterization(xE,yE,inter_par)
+    ymin = np.min(yi)
+    ind_min = np.argmin(yi)
+    xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
+#TODO: fix the mindis output...
+    if utl.mindis(xm,xE)[0] < 1e-5:
+        break
+
+    xE = np.hstack((xE,xm))
+    yE = np.hstack((yE,fun(xm)))
+
+#%%
 
 
 #

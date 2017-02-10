@@ -298,11 +298,11 @@ objfun = lambda status,x: (status, costSearch(x,inter_par,xC,R2,y0) )
 grad_objfun  = lambda status,x: (status, kgradSearch(x,inter_par,xC,R2,y0))
 
 
-# snopt.snopta(name='sntoyaFG', usrfun=sntoya_objFG, x0=x0, xlow=xlow, xupp=xupp,
-#              Flow=Flow, Fupp=Fupp, ObjRow=ObjRow, A=A, G=G, xnames=xNames, Fnames=FNames)
+snopt.snopta(name='sntoyaFG', usrfun=sntoya_objFG, x0=x0, xlow=xlow, xupp=xupp,
+             Flow=Flow, Fupp=Fupp, ObjRow=ObjRow, A=A, G=G, xnames=xNames, Fnames=FNames)
 #
-# snopt.snopta(name='sntoyaFG', usrfun=grad_objfun, x0=x0, xlow=xlow, xupp=xupp,
-#              Flow=Flow, Fupp=Fupp, ObjRow=ObjRow, A=A, G=G, xnames=xNames, Fnames=FNames)
+snopt.snopta(name='sntoyaFG', usrfun=grad_objfun, x0=x0, xlow=xlow, xupp=xupp,
+             Flow=Flow, Fupp=Fupp, ObjRow=ObjRow, A=A, G=G, xnames=xNames, Fnames=FNames)
 
 
 #######

@@ -66,7 +66,7 @@ def tringulation_search_bound_constantK(inter_par,xi,K,ind_min):
     if yml < ym:
         xm = np.copy(xml)
         ym = np.copy(yml)
-    return xm,ym
+    return xm.reshape(-1,1) ,ym
         
 def Constant_K_Search(x0,inter_par,xc,R2,K,lb=[],ub=[]):
 #    This funciron minimizes the search funciton in the specified simplex with xc as circumcenter of that simplex and R2 as the circumradius of that simplex

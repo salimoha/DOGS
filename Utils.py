@@ -102,35 +102,6 @@ def interpolateparameterization(xi, yi, inter_par):
         return inter_par
         #      print(V)
 
-def interpolate_val(x, inter_par):
-    if inter_par.method == "NPS":
-        w = inter_par.w
-        v = inter_par.v
-        xi = inter_par.xi
-
-        S = xi - x
-        #             print np.dot(v.T,np.concatenate([np.ones((1,1)),x],axis=0)) + np.dot(w.T,np.sqrt(np.diag(np.dot(S.T,S))))**3
-        return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
-
-def interpolate_grad(x, inter_par):
-    if inter_par.method == "NPS":
-        w = inter_par.w
-        v = inter_par.v
-        xi = inter_par.xi
-        n = x.shape[0]
-        N = xi.shape[1]
-        g = np.zeros((n))
-        for ii in range(N):
-            X = x[:, 0] - xi[:, ii]
-            g = g + 3 * w[ii] * X.T * np.linalg.norm(X)
-        # print("--------------")
-        #                 print v[ii]
-        #             print(g)
-        #             print("--------------")
-        #             print(v[1:])
-        g = g + v[1:, 0]
-
-        return g.T
 
 def interpolate_hessian(x, inter_par):
     if inter_par.method == "NPS" or self.method == 1:
@@ -246,7 +217,7 @@ def vertex_find(A, b, lb, ub):
                                         # print(x1)
                                         # print(index)
                                         print('--------------!!!!---------')
-                                        quit()
+                                        # quit()
     else:
         m = A.shape[0]
         n = A.shape[1]
@@ -266,6 +237,196 @@ def vertex_find(A, b, lb, ub):
             if (A2 * x - b2).max() < 1e-6:
                 Vertex = np.column_stack((Vertex, x))
     return Vertex
+
+
+from scipy.spatial import Delaunay
+
+
+
+def tringulation_search_bound_constantK(inter_par, xi, K, ind_min):
+    n = xi.shape[0]
+    # [R2, xC] = utl.circhyp(xi[:, tri.simplices[ind, :]], n)
+    tri = Delaunay(xi.T)  # fix for 1D
+    Sc = np.zeros([np.shape(tri.simplices)[0]])
+    Scl = np.zeros([np.shape(tri.simplices)[0]])
+    for ii in range(np.shape(tri.simplices)[0]):
+        R2, xc = circhyp(xi[:, tri.simplices[ii, :]], n)
+        x = np.dot(xi[:, tri.simplices[ii, :]], np.ones([n + 1, 1]) / (n + 1))
+        Sc[ii] = interpolate_val(x, inter_par) - K * (R2 - np.linalg.norm(x - xc) ** 2)
+        if np.sum(ind_min == tri.simplices[ii, :]):
+            Scl[ii] = Sc[ii]
+        else:
+            Scl[ii] = np.inf
+    # Global one
+    t = np.min(Sc)
+    ind = np.argmin(Sc)
+    R2, xc = circhyp(xi[:, tri.simplices[ind, :]], n)
+    x = np.dot(xi[:, tri.simplices[ind, :]], np.ones([n + 1, 1]) / (n + 1))
+    xm, ym = Constant_K_Search(x, inter_par, xc, R2, K)
+    # Local one
+    t = np.min(Sc)
+    ind = np.argmin(Sc)
+    R2, xc = circhyp(xi[:, tri.simplices[ind, :]], n)
+    # Notice!! ind_min may have a problen as an index
+    x = np.copy(xi[:, ind_min - 1])
+    xml, yml = Constant_K_Search(x, inter_par, xc, R2, K)
+    if yml < ym:
+        xm = np.copy(xml)
+        ym = np.copy(yml)
+    return xm.reshape(-1, 1), ym
+
+
+def Constant_K_Search(x0, inter_par, xc, R2, K, lb=[], ub=[]):
+    #    This funciron minimizes the search funciton in the specified simplex with xc as circumcenter of that simplex and R2 as the circumradius of that simplex
+    #   the search funciton is: s(x) = p(x) - K e(x)
+    #   where the p(x) is the surrogate model: usually polyharmonic spline (RBF) phi = r^3
+    #   the artificali uncertatintiy fucniton is：e(x) = R2-norm(x-xc)
+    #   K: is a constant paramtere that specifies a tradeoff bwtween gloabl exploration (e - K large) and local refinemnet (p - K small)
+    #   K is dependant on the mesh size. Its changes is proporstional  to the inverse of the rate as mesh size.
+    #    Initially the algorithm tends to explore globally. and as the algorithm procceeds it becomes dense at the position of a global minimizer.
+    #     global lb,ub
+    #     costfun,costjac = lambda x:Contious_search_cost(x,inter_par,xc,R2,K)
+    n = x0.shape[0]
+    costfun = lambda x: Contious_search_cost(x, inter_par, xc, R2, K)
+    costjac = lambda x: Contious_search_cost_grad(x, inter_par, xc, R2, K)
+    opt = {'disp': True}
+    # TODO: boundas 0 to 1 all dimetnsions.. fix with lb and ub
+    bnds = tuple([(0, 1) for i in range(int(n))])
+    x00 = x0
+    x0 = pd.DataFrame(x00).values
+    # TODO: the output of minimize fucntion is np array (n,). For interpolte_val the input is (n,1)
+    # TODO:  S=xi-x has problem in side this function
+    # TODO: fix the input information for jacobi!!!!!!!!!!
+    res = optimize.minimize(costfun, x0, method='L-BFGS-B', bounds=bnds, options=opt)
+    x = res.x
+    y = res.fun
+    return x, y
+
+
+# gradient of soncstant K search
+def Contious_search_cost_grad(x, inter_par, xc, R2, K):
+    DM = interpolate_grad(x, inter_par).reshape(-1, 1) + 2 * K * (x - xc)
+    dm = pd.DataFrame(DM)
+    return DM.T
+    # return dm.values
+
+
+# value of consatn K search
+def Contious_search_cost(x, inter_par, xc, R2, K):
+    M = interpolate_val(x, inter_par) - K * (R2 - np.linalg.norm(x - xc) ** 2)
+    return M
+
+
+# Muhan-->implementaiton #TODO
+# def Contious_search_cost(x,inter_par,xc,R2,K):
+#     M = interpolate_val(x,inter_par) - K*(R2 - np.linalg.norm(x-xc)**2)
+#     num_arguments = expecting()
+#     if num_arguments > 1:
+#         DM = interpolate_grad(x,inter_par) + 2*K*(x-xc)
+#         return M,DM
+#     return M
+# #%%
+
+# %%
+def interpolate_val(x, inter_par):
+    if inter_par.method == "NPS":
+        w = inter_par.w
+        v = inter_par.v
+        xi = inter_par.xi
+        try:
+            S = xi - x
+            return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, (
+            np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
+        except:
+            S = xi - np.tile(x.reshape(-1, 1), xi.shape[1])
+            return np.dot(v.T, np.concatenate([np.ones(1), x], axis=0).reshape(-1, 1)) + np.dot(w.T, (
+            np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
+
+
+# %%
+def interpolate_grad(x, inter_par):
+    if inter_par.method == "NPS":
+        w = inter_par.w
+        v = inter_par.v
+        xi = inter_par.xi
+        n = x.shape[0]
+        N = xi.shape[1]
+        g = np.zeros((n))
+        x1 = np.copy(x)
+        x = pd.DataFrame(x1).values
+        for ii in range(N):
+            X = x[:, 0] - xi[:, ii]
+            g = g + 3 * w[ii] * X.T * np.linalg.norm(X)
+        # print("--------------")
+        #                 print v[ii]
+        #             print(g)
+        #             print("--------------")
+        #             print(v[1:])
+        g = g + v[1:, 0]
+
+        return g.T
+
+    def inter_min(x, inter_par, Ain=[], bin=[]):
+        # %find the minimizer of the interpolating function starting with x
+        rho = 0.9  # backtracking paramtere
+        n = x.shape[0]
+        #     start the serafh method
+        iter = 0
+        x0 = np.zeros((n, 1))
+        # while iter < 10:
+        H = np.zeros((n, n))
+        g = np.zeros((n, 1))
+        y = interpolate_val(x, inter_par)
+        g = interpolate_grad(x, inter_par)
+        # H = interpolate_hessian(x, inter_par)
+        # Perform the Hessian modification
+        # H = modichol(H, 0.01, 20);
+        # H = (H + H.T)/2.0
+        #         optimizaiton for finding hte right direction
+        objfun3 = lambda x: (interpolate_val(x, inter_par))
+        grad_objfun3 = lambda x: interpolate_grad(x, inter_par)
+        res = minimize(objfun3, x0, method='L-BFGS-B', jac=grad_objfun3, options={'gtol': 1e-6, 'disp': True})
+        return res.x, res.fun
+
+
+# %%
+import inspect, dis
+
+
+def expecting():
+    """Return how many values the caller is expecting"""
+    f = inspect.currentframe()
+    f = f.f_back.f_back
+    c = f.f_code
+    i = f.f_lasti
+    bytecode = c.co_code
+    instruction = bytecode[i + 3]
+    if instruction == dis.opmap['UNPACK_SEQUENCE']:
+        howmany = bytecode[i + 4]
+        return howmany
+    elif instruction == dis.opmap['POP_TOP']:
+        return 0
+    return 1
+
+
+# %%
+
+
+
+
+
+inter_par = Inter_par("NPS")
+xi = np.array([[0.5, 0.8, 0.2, 0.6]])
+fun = lambda x: np.multiply(x - 0.45, x - 0.45)
+yi = fun(xi)
+print(yi)
+K = 3
+inter_par = interpolateparameterization(xi, yi, inter_par)
+ymin = np.min(yi)
+ind_min = np.argmin(yi)
+xm, ym = tringulation_search_bound_constantK(inter_par, xi, K, ind_min)
+# %%
+
 
 
 # %%
