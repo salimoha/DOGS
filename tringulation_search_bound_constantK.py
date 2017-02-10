@@ -123,26 +123,19 @@ def Contious_search_cost(x,inter_par,xc,R2,K):
 # #%%
 
 #%%
+zmh = interpolate_val(x,inter_par)
+
+#%%
 def interpolate_val(x, inter_par):
     if inter_par.method == "NPS":
         w = inter_par.w
         v = inter_par.v
         xi = inter_par.xi
-        print("-------!!!!!-------")
-        print(xi.shape)
-        print(x.shape)
-        print("-------!!!!!-------")
-        print(type(xi))
-        print(type(x))
-        print(xi-x)
-        print("-------!!!!!---%%%%%$$$$$$$$$$$$$$$$$$$$$----")
-        # print(x)
         try:
             S = xi - x
         except:
             S =  xi - np.tile(x.reshape(-1,1),xi.shape[1])
-        #             print np.dot(v.T,np.concatenate([np.ones((1,1)),x],axis=0)) + np.dot(w.T,np.sqrt(np.diag(np.dot(S.T,S))))**3
-        return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
+        return np.dot(v.T, np.concatenate([np.ones(1), x], axis=0).reshape(-1,1)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
 #%%
 def interpolate_grad(x, inter_par):
     if inter_par.method == "NPS":
