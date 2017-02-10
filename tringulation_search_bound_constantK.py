@@ -128,15 +128,6 @@ def interpolate_val(x, inter_par):
         w = inter_par.w
         v = inter_par.v
         xi = inter_par.xi
-        print("-------!!!!!-------")
-        print(xi.shape)
-        print(x.shape)
-        print("-------!!!!!-------")
-        print(type(xi))
-        print(type(x))
-        print(xi-x)
-        print("-------!!!!!---%%%%%$$$$$$$$$$$$$$$$$$$$$----")
-        # print(x)
         try:
             S = xi - x
         except:
