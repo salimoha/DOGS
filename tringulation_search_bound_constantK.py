@@ -8,13 +8,6 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.spatial import Delaunay
-
-
-t2 = np.arange(1,4)
-val = np.amin(t2)
-val2 = np.min(t2)
-pos = np.argmin(t2)
-print(val2,pos)
 #%%
 def circhyp(x, N):
     # circhyp     Circumhypersphere of simplex
@@ -92,7 +85,6 @@ def Constant_K_Search(x0,inter_par,xc,R2,K,lb=[],ub=[]):
     # boundas 0 to 1 all dimetnsions
     bnds = tuple([ (0,1) for i in range(int(n))])
     x00 =x0
-
     x0 = pd.DataFrame(x00).values
     # TODO: the output of minimize fucntion is np array (n,). For interpolte_val the input is (n,1)
     # TODO:  S=xi-x has problem in side this function
@@ -123,9 +115,6 @@ def Contious_search_cost(x,inter_par,xc,R2,K):
 # #%%
 
 #%%
-zmh = interpolate_val(x,inter_par)
-
-#%%
 def interpolate_val(x, inter_par):
     if inter_par.method == "NPS":
         w = inter_par.w
@@ -133,9 +122,10 @@ def interpolate_val(x, inter_par):
         xi = inter_par.xi
         try:
             S = xi - x
+            return np.dot(v.T, np.concatenate([np.ones(1,1), x], axis=0)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
         except:
             S =  xi - np.tile(x.reshape(-1,1),xi.shape[1])
-        return np.dot(v.T, np.concatenate([np.ones(1), x], axis=0).reshape(-1,1)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
+            return np.dot(v.T, np.concatenate([np.ones(1), x], axis=0).reshape(-1,1)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
 #%%
 def interpolate_grad(x, inter_par):
     if inter_par.method == "NPS":
@@ -189,7 +179,7 @@ inter_par = interpolateparameterization(xi,yi,inter_par)
 ymin = np.min(yi)
 ind_min = np.argmin(yi)
 xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
-
+#%%
 
 
 
@@ -214,5 +204,15 @@ inter_par = interpolateparameterization(xi, yi, inter_par)
 
 ymin = np.min(yi)
 ind_min = np.argmin(yi)
-xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
+#xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
 #%%
+def test(x,y):
+    n_a = expecting()
+    if n_a > 1:
+        return x+y,x-y
+    return x*y
+c1,s1 = test(11,2)
+print('c1',c1,'s1',s1)
+#ft = lambda x:test(x,2)
+#c,s = ft(11)
+#print(c)
