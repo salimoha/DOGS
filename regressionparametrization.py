@@ -7,58 +7,82 @@ pd.options.display.max_rows = 20;
 pd.options.display.expand_frame_repr = False
 import pylab as plt
 
-def regressionparametarization(xi,yi, sigma, inter_method ):
+from scipy import optimize
+
+def regressionparametarization(xi,yi, sigma, inter_method):
     n = xi.shape[0]
-    m = xi.shape[1]
-    if inter_par.method == 'NPS':
-        A = np.zeros(shape=(m, m))
-        for ii in range(0, m, 1):  # for ii =0 to m-1 with step 1; range(1,N,1)
-            for jj in range(0, m, 1):
+    N = xi.shape[1]
+    #  Import the class!!!!
+    if inter_method == 'NPS':
+        A = np.zeros(shape=(N, N))
+        for ii in range(0, N, 1):  # for ii =0 to m-1 with step 1; range(1,N,1)
+            for jj in range(0, N, 1):
                 A[ii, jj] = (np.dot(xi[:, ii] - xi[:, jj], xi[:, ii] - xi[:, jj])) ** (3.0 / 2.0)
 
-        V = np.concatenate((np.ones((1, m)), xi), axis=0)
-        A1 = np.concatenate((A, np.transpose(V)), axis=1)
-        A2 = np.concatenate((V, np.zeros(shape=(n + 1, n + 1))), axis=1)
-        yi = yi[np.newaxis, :]
-        # print(yi.shape)
-        b = np.concatenate([np.transpose(yi), np.zeros(shape=(n + 1, 1))])
-        #      b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
-        A = np.concatenate((A1, A2), axis=0)
-        wv = np.linalg.solve(A, b)
-        inter_par.w = wv[:m]
-        inter_par.v = wv[m:]
-        inter_par.xi = xi
-        return inter_par
+        V = np.concatenate((np.ones((1, N)), xi), axis=0)
+#        A1 = np.concatenate((A, np.transpose(V)), axis=1)
+#        A2 = np.concatenate((V, np.zeros(shape=(n + 1, n + 1))), axis=1)
+#        yi = yi[np.newaxis, :]
+#        # print(yi.shape)
+#        b = np.concatenate([np.transpose(yi), np.zeros(shape=(n + 1, 1))])
+#        #      b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
+#        A = np.concatenate((A1, A2), axis=0)
+#        wv = np.linalg.solve(A, b)
+#        inter_par.w = wv[:m]
+#        inter_par.v = wv[m:]
+#        inter_par.xi = xi
+#        return inter_par
 
-    return inter_par, yp
-
-
+        # Muhan Modified
+        w1 = np.linalg.solve((np.dot(np.diag(np.divide(1,sigma)),V.T)),np.divide(yi,sigma).reshape(-1,1))
+        b = np.mean(np.divide(np.dot(V.T,w1)-yi.reshape(-1,1),sigma)**2)
+        wv = np.zeros([N+n+1])
+#        if b < 1:
+#            wv[:N] = 0
+#            wv[N+1:] = w1
+#            rho = 1000
+#            wv = wv.reshape(-1,1)
+#        else:
+        rho = 1.1
+        print(rho)
+        # TODO add another label to identify how many outputs you want.
+        fun = lambda rho:smoothing_polyharmonic_fs(rho,A,V,sigma,yi,n,N)
+        sol = optimize.fsolve(fun,rho)
+        b,db,wv = smoothing_polyharmonic(sol,A,V,sigma,yi,n,N)
+        print(b)
+        print(wv)
+#    return inter_par, yp
+#%%
+xi = np.array([[1,2,0,1],[2,1,4,2],[6,3,1,2]])
+yi = np.array([2,4,6,8])
+sigma = np.array([2,7,4,2])
+inter_method = 'NPS'
+regressionparametarization(xi,yi, sigma, inter_method)
+#%%
 def smoothing_polyharmonic(rho, A, V, sigma, yi, n, N):
-
-    A01 = np.concatenate((A+ rho * np.diag(sigma ** 2), np.transpose(V)), axis=1)
+    A01 = np.concatenate((A + rho * np.diag(sigma ** 2), np.transpose(V)), axis=1)
     A02 = np.concatenate((V, np.zeros(shape=(n + 1, n + 1))), axis=1)
     A1 = np.concatenate((A01, A02), axis=0)
-    # b1 = np.concatinate(yi.T, np.zeros((n+1,1)))
-    yi = yi[np.newaxis, :]
-    # print(yi.shape)
-    b1 = np.concatenate([np.transpose(yi), np.zeros(shape=(n + 1, 1))])
-    #      b = np.concatenate((np.transpose(yi), np.zeros(shape=(n+1,1) )), axis=0)
+    b1 = np.concatenate([yi.reshape(-1,1), np.zeros(shape=(n + 1, 1))])
     wv = np.linalg.solve(A1, b1)
-
-    tmp = np.multiply(wv(1:N),(sigma.T)**2)
-    b = np.mean(tmp* rho** 2)-1
-
-    # could have lots of errors
-    bdwv = np.concatenate([np.transpose(tmp), np.zeros(shape=(n + 1, 1))])
+    b = np.mean(np.multiply(wv[:N],sigma)**2*rho**2) - 1
+    bdwv = np.concatenate([np.multiply(wv[:N],sigma.reshape(-1,1)**2), np.zeros((n + 1, 1))])
     Dwv = np.linalg.solve(-A1, bdwv)
-    tmp1 = wv(1:N)**2 * rho + rho**2 * np.transpose( np.multiply(np.multiply(wv(:N),Dwv(:N)), sigma**2))
-    db = 2*np.mean(tmp1)
-
-    #
+    db = 2 * np.mean(np.multiply(wv[:N]**2*rho + rho**2*np.multiply(wv[:N],Dwv[:N]),sigma**2))
     return b, db, wv
-
-
-
+def smoothing_polyharmonic_fs(rho, A, V, sigma, yi, n, N):
+    A01 = np.concatenate((A + rho * np.diag(sigma ** 2), np.transpose(V)), axis=1)
+    A02 = np.concatenate((V, np.zeros(shape=(n + 1, n + 1))), axis=1)
+    A1 = np.concatenate((A01, A02), axis=0)
+    b1 = np.concatenate([yi.reshape(-1,1), np.zeros(shape=(n + 1, 1))])
+    wv = np.linalg.solve(A1, b1)
+    b = np.mean(np.multiply(wv[:N],sigma)**2*rho**2) - 1
+    bdwv = np.concatenate([np.multiply(wv[:N],sigma.reshape(-1,1)**2), np.zeros((n + 1, 1))])
+    Dwv = np.linalg.solve(-A1, bdwv)
+    db = 2 * np.mean(np.multiply(wv[:N]**2*rho + rho**2*np.multiply(wv[:N],Dwv[:N]),sigma**2))
+    return b
+    
+    #%%
 #
 # function[inter_par, yp] = regressionparametarization(xi, yi,
 # sigma, inter_method)
