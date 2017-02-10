@@ -34,7 +34,11 @@ def regressionparametarization(xi,yi, sigma, inter_method):
 #        return inter_par
 
         # Muhan Modified
-        w1 = np.linalg.solve((np.dot(np.diag(np.divide(1,sigma)),V.T)),np.divide(yi,sigma).reshape(-1,1))
+        # w1 = np.linalg.solve((np.dot(np.diag(np.divide(1,sigma)),V.T)),np.divide(yi,sigma).reshape(-1,1))
+
+
+        w1 = np.linalg.lstsq((np.dot(np.diag(np.divide(1, sigma[0])), V.T)), np.divide(yi, sigma).T)
+        w1 = np.copy(w1[0])
         b = np.mean(np.divide(np.dot(V.T,w1)-yi.reshape(-1,1),sigma)**2)
         wv = np.zeros([N+n+1])
 #        if b < 1:
@@ -51,8 +55,16 @@ def regressionparametarization(xi,yi, sigma, inter_method):
         b,db,wv = smoothing_polyharmonic(sol,A,V,sigma,yi,n,N)
         print(b)
         print(wv)
-#    return inter_par, yp
+
+        inter_par.w = wv[:N]
+        inter_par.v = wv[N+1:]
+        inter_par.xi = xi
+        # TODO: the yp
+
+        # interpolate_val(xi, )
+    return inter_par, yp
 #%%
+sigma = np.random.rand(1,3)
 xi = np.array([[1,2,0,1],[2,1,4,2],[6,3,1,2]])
 yi = np.array([2,4,6,8])
 sigma = np.array([2,7,4,2])
