@@ -55,7 +55,8 @@ def stationary_statistical_learning_reduced(x,m):
     print("---------============--------------")
     print("sigma2N = ", sigma2_N)
 #    return theta
-    return theta,moment2_model,corr_model,sigmac2, sigma2_N
+#    return theta,moment2_model,corr_model,sigmac2, sigma2_N
+    return sigma2_N
 
 #%%
 def Loss_fun_reduced(tau,sigmac2):
@@ -153,7 +154,7 @@ def jac_Loss_fun_reduced(tau,sigmac2):
     opt = {'disp':False}
     
     A = optimize.minimize(func,x0,jac=jaco,constraints=cons,method='SLSQP',options=opt)
-    L = 0.5 * np.dot(A.x.T, np.dot(H , A.x))
+#    L = 0.5 * np.dot(A.x.T, np.dot(H , A.x))
     DL = np.multiply(DL.T,A.x)
 
 #scipy.optimize.leastsq
@@ -208,7 +209,7 @@ def exponential_correlation(A,tau,N):
         corr = corr + A[np.unravel_index(ii-1,A.shape,'F')]*np.power(tau[ii-1],np.arange(1,N+1))
     return corr    
 #%%
-
+# CAN WE write this function more efficient
 def theoritical_sigma(corr,s,sigma02):
     # should be okay
     # muhan 1/28
@@ -320,7 +321,15 @@ print("sigma2_N == ", sigma2_N)
 
 
 
+#%%
 
+import scipy.io as sio
+fm = sio.loadmat('/Users/shahrouz/Desktop/IC8.mat')
+
+d = fm['Drag']
+x = d[0][1]
+m=4
+sigma2_N = stationary_statistical_learning_reduced(x,m)
 
 
 
