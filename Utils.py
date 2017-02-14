@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy import optimize
 np.set_printoptions(linewidth=200, precision=5, suppress=True)
 import pandas as pd;
 
@@ -102,7 +102,65 @@ def interpolateparameterization(xi, yi, inter_par):
         return inter_par
         #      print(V)
 
+def regressionparametarization(xi,yi, sigma, inter_par):
+    # Notice xi, yi and sigma must be a two dimension matrix, even if you want it to be a vector.
+    # or there will be error
+    n = xi.shape[0]
+    N = xi.shape[1]
+    if inter_par.method == 'NPS':
+        A = np.zeros(shape=(N, N))
+        for ii in range(0, N, 1):  # for ii =0 to m-1 with step 1; range(1,N,1)
+            for jj in range(0, N, 1):
+                A[ii, jj] = (np.dot(xi[:, ii] - xi[:, jj], xi[:, ii] - xi[:, jj])) ** (3.0 / 2.0)
+        V = np.concatenate((np.ones((1, N)), xi), axis=0)
+        w1 = np.linalg.lstsq((np.dot(np.diag(np.divide(1, sigma[0])), V.T)), np.divide(yi, sigma).T)
+        w1 = np.copy(w1[0])
+        b = np.mean(np.divide(np.dot(V.T,w1)-yi.reshape(-1,1),sigma)**2)
+        wv = np.zeros([N+n+1])
+        if b < 1:
+            wv[N:] = np.copy(w1.T)
+            rho = 1000
+            wv = np.copy(wv.reshape(-1,1))
+        else:
+            rho = 1.1
+            fun = lambda rho:smoothing_polyharmonic(rho,A,V,sigma,yi,n,N,1)
+            sol = optimize.fsolve(fun,rho)
+            b,db,wv = smoothing_polyharmonic(sol,A,V,sigma,yi,n,N,3)
+        inter_par.w = wv[:N]
+        inter_par.v = wv[N:]
+        inter_par.xi = xi
+        yp = np.zeros([N])
+        while(1):
+            for ii in range(N):
+                yp[ii] = interpolate_val(xi[:,ii],inter_par)
+            residual = np.max(np.divide(np.abs(yp-yi),sigma[0]))
+            if residual < 2:
+                break
+            rho *= 0.9
+            b,db,wv = smoothing_polyharmonic(rho,A,V,sigma,yi,n,N)
+            inter_par.w = wv[:N]
+            inter_par.v = wv[N:]
+    return inter_par, yp
+    
 
+def smoothing_polyharmonic(rho, A, V, sigma, yi, n, N,num_arg):
+    # Notice: num_arg = 1 will return b
+    #         num_arg = else will return b,db,wv
+    A01 = np.concatenate((A + rho * np.diag(sigma ** 2), np.transpose(V)), axis=1)
+    A02 = np.concatenate((V, np.zeros(shape=(n + 1, n + 1))), axis=1)
+    A1 = np.concatenate((A01, A02), axis=0)
+    b1 = np.concatenate([yi.reshape(-1,1), np.zeros(shape=(n + 1, 1))])
+    wv = np.linalg.solve(A1, b1)
+    b = np.mean(np.multiply(wv[:N],sigma)**2*rho**2) - 1
+    bdwv = np.concatenate([np.multiply(wv[:N],sigma.reshape(-1,1)**2), np.zeros((n + 1, 1))])
+    Dwv = np.linalg.solve(-A1, bdwv)
+    db = 2 * np.mean(np.multiply(wv[:N]**2*rho + rho**2*np.multiply(wv[:N],Dwv[:N]),sigma**2))
+    if num_arg == 1:
+        return b
+    else:
+        return b,db,wv
+        
+        
 def interpolate_hessian(x, inter_par):
     if inter_par.method == "NPS" or self.method == 1:
         w = inter_par.w
@@ -187,7 +245,6 @@ def vertex_find(A, b, lb, ub):
                 else:
                     for ii in range(len(C)):
                         index_A = np.copy(list(C[ii]))
-                        print  index_A
                         v1 = [i for i in range(1, m + 1)]
                         index_A_C = np.setdiff1d(v1, index_A)
                         A1 = np.copy(A[index_A - 1, :])
@@ -327,7 +384,7 @@ def Contious_search_cost(x, inter_par, xc, R2, K):
 #     return M
 # #%%
 
-# %%
+
 def interpolate_val(x, inter_par):
     if inter_par.method == "NPS":
         w = inter_par.w
@@ -343,7 +400,7 @@ def interpolate_val(x, inter_par):
             np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
 
 
-# %%
+
 def interpolate_grad(x, inter_par):
     if inter_par.method == "NPS":
         w = inter_par.w
@@ -389,69 +446,34 @@ def interpolate_grad(x, inter_par):
         return res.x, res.fun
 
 
-# %%
-import inspect, dis
 
+def ismember(A,B):
+    return [np.sum(a == B) for a in A]
 
-def expecting():
-    """Return how many values the caller is expecting"""
-    f = inspect.currentframe()
-    f = f.f_back.f_back
-    c = f.f_code
-    i = f.f_lasti
-    bytecode = c.co_code
-    instruction = bytecode[i + 3]
-    if instruction == dis.opmap['UNPACK_SEQUENCE']:
-        howmany = bytecode[i + 4]
-        return howmany
-    elif instruction == dis.opmap['POP_TOP']:
-        return 0
-    return 1
-
-
-# %%
-
-
-
-
-
-inter_par = Inter_par("NPS")
-xi = np.array([[0.5, 0.8, 0.2, 0.6]])
-fun = lambda x: np.multiply(x - 0.45, x - 0.45)
-yi = fun(xi)
-print(yi)
-K = 3
-inter_par = interpolateparameterization(xi, yi, inter_par)
-ymin = np.min(yi)
-ind_min = np.argmin(yi)
-xm, ym = tringulation_search_bound_constantK(inter_par, xi, K, ind_min)
-# %%
-
-
-
-# %%
-A = np.array([[1, 2]])
-b = np.array([[1]])
-lb = np.array([[0], [0]])
-ub = np.array([[1], [1]])
-# %%
-V = vertex_find(A, b, lb, ub)
-print(V)
-# %%
-V = np.matrix([[], []])
-# %%
-xi = np.matrix([[1, 0, 1, 0], [1, 1, 0, 0]])
-# %%
-V = np.matrix([[], []])
-# %%
-F = bounds(lb, ub, 2)
-x1 = F[:, 1]
-t2 = (A * x1) - b
-t1 = np.dot(A, x1)
-print(t1, t2)
-# %%
-V = np.matrix([[1, 0], [0, 0]])
-x = np.matrix([[1], [0]])
-[y, x1, index] = mindis(x, V)
-print(y, y > 1e-6)
-
+def points_neighbers_find(x,xE,xU,Bin,Ain):
+    [delta_general, index,x1] = mindis(x, np.concatenate((xE,xU ), axis=1) )
+    
+    active_cons = []
+    b = Bin - np.dot(Ain,x)
+    for i in range(len(b)):
+        if b[i][0] < 1e-3:
+            active_cons.append(i+1)
+    active_cons = np.array(active_cons)
+    
+    active_cons1 = []
+    b = Bin - np.dot(Ain,x1)
+    for i in range(len(b)):
+        if b[i][0] < 1e-3:
+            active_cons1.append(i+1)
+    active_cons1 = np.array(active_cons1)
+    
+    if len(active_cons) == 0 or min(ismember(active_cons,active_cons1)) == 1:
+        newadd = 1
+        success = 1
+        if mindis(x,xU) == 0:
+            newadd = 0
+    else:
+        success = 0
+        newadd = 0
+        xU = np.concatenate((xU,x),axis=0)
+    return x, xE, xU, newadd, success	

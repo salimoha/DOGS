@@ -10,7 +10,7 @@ import pylab as plt
 from scipy import optimize
 
 def regressionparametarization(xi,yi, sigma, inter_par):
-    # Notice sigma must be a two dimension matrix, even if you want it to be a vector.
+    # Notice xi, yi and sigma must be a two dimension matrix, even if you want it to be a vector.
     # or there will be error
     n = xi.shape[0]
     N = xi.shape[1]
@@ -95,15 +95,13 @@ class Inter_par():
         self.xi=[]
         self.a=[]
 #%%
-inter_par = Inter_par("NPS")
-xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
-#xi=np.random.rand(2,3)
-#x=np.array([[0.5],[0.5]])
-#yi=np.random.rand(1,3)
-yi=fun(xi)
-print('yi',yi)
-sigma = np.random.rand(1,5)
-print('sigma',sigma)
+inter_par = Inter_par(method="NPS")
+xi = np.array([[0,0.1000,0.2000,0.3000,0.5000,1]])
+yi=np.array([[0.0049,0.2169,0.0473,0.0293,0.2529,0.8425]])
+sigma = np.array([[0.0100,0.2000,0.0100,0.2000,0.0100,0.2000]])
 inter_par,yp1 = regressionparametarization(xi,yi, sigma, inter_par)
 print('yp',yp1)
-print('inter_par.v',inter_par.v)
+print('inter_par.v')
+print(inter_par.v)
+print('inter_par.w')
+print(inter_par.w)

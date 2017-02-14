@@ -57,16 +57,16 @@ for ff in range(nff):
         T[ii] = 1
 
     SigmaT = sigma0 / np.square(T)
-    xU = Utils.bounds(np.zeros(n,1),np.ones(n,1),n)
+    # Muhan Modiefied : I suppose that here we should generate a n by 1 vector full of zeros 
+    xU = Utils.bounds(np.zeros([n,1]),np.ones([n,1]),n)
 
     # initialize Nm, L, K
     L=L0
-
+    inter_par = Utils.Inter_par(method="NPS")
     for k in range(iter_max):
-        [inter_par, yp] = Utils.regressionparametarization(xE, yE, sigma0/ np.square(T), inter_method)
+        [inter_par, yp] = Utils.regressionparametarization(xE, yE, np.array([sigma0/ np.square(T)]), inter_par)
 
         K0 = np.ptp(yE, axis=0)
-
         #Calculate the discrete function.
         tmp = yp+SigmaT
         yt = np.amin(tmp, 0)
@@ -85,25 +85,26 @@ for ff in range(nff):
             yE[ind_exist] = ((fun(xd)) + yE(ind_exist) * T(ind_exist)) / (T(ind_exist)+1)
             T[ind_exist] = T(ind_exist)+1
         else:
-            tmp1 = sigma0 / sd.square(T(ind_exist))
-            tmp2 = 0.01 * range(yE) * (max(ub - lb)) / Nm
+            tmp1 = np.divide(sigma0 , np.sqrt(T[ind_exist]))
+            tmp2 = 0.01 * np.ptp(yE, axis=0) * (max(ub - lb)) / Nm
             if tmp1 < tmp2:
                 yd = np.inf
 
             # Calcuate the unevaluated function:
-            yu = np.empty( shape=(0, 0) ) #create empty array
+            yu = np.empty( shape=[0, 0] ) #create empty array
             if (xU.shape[1]!=0):
                 yu = np.zeros(xU.shape[1]);
                 for ii in range(xU.shape[1]):
                     tmp = Utils.interpolate_val(xU[:, ii], inter_par)-np.amin(yp,0)
-                    yu[ii] = tmp / Utils.mindis(xU[:, ii], xE)
+                    t1,_,_ = Utils.mindis(np.array([xU[:, ii]]), xE)
+                    yu[ii] = tmp / t1
 
-            if (xU.shape[1]!=0 & np.amin(yu,0) < 0):
+            if xU.shape[1]!=0 and np.min(yu) < 0:
                 t = np.amin(yu, 0)
                 ind = np.argmin(yu, 0)
                 xc = xU[:, ind]
                 yc = -np.inf
-                xU[:, ind] = np.empty( shape=(0, 0) ) #create empty array
+                xU[:, ind] = np.empty( shape=[1] ) #create empty array
             else:
                 #Minimize s_c ^ k(x)
                 while 1:
@@ -132,27 +133,28 @@ for ff in range(nff):
                         xU[:, ind] = np.empty(shape=(0, 0))  # create empty array
 
             # Minimize S_d ^ k(x)
-            if (Utils.mindis(xc, xE) < 1e-6):
+            t1,_,_ = Utils.mindis(np.array([xc]), xE)
+            if t1 < 1e-6:
                 K = 2 * K
                 Nm = 2 * Nm
                 L = L + L0
 
             if (yc < yd):
                 # keyboard
-                if (Utils.mindis(xc, xE) > 1e-6):
-                    xE = [xE, xc]
-                    yE = [yE, fun(lb + (ub - lb) * xc)]
+                t1,_,_ = Utils.mindis(np.array([xc]), xE)
+                if t1 > 1e-6:
+                    xE = np.concatenate([xE, np.array([xc])],axis=1)
+                    yE = np.concatenate((yE, np.array([fun(lb + (ub - lb) * xc)])))
                     T = [T, 1]
-                    yr = [yr, funr(lb + (ub - lb) * xc)]
+                    yr = np.concatenate([yr, np.array([funr(lb + (ub - lb) * xc)])],axis=0)
                     SigmaT = sigma0 / np.square(T)
                 else:
                     yE[ind_exist] = ((fun(lb + (ub - lb) * xd)) + yE[ind_exist] * T[ind_exist]) / (T[ind_exist] + 1)
                     T[ind_exist] = T[ind_exist] + 1
                     SigmaT = sigma0 / np.square(T)
-
-        regret[ff, k] = np.amin(yr, 0)
+        regret[ff, k] = np.min(yr)
         estimate[ff, k] = yE[ind_out]
-        datalength[ff, k] = np.shape(xE)
+        datalength[ff, k] = np.shape(xE)[1]
         mesh[ff, k] = Nm
 
 
@@ -170,4 +172,4 @@ for ff in range(nff):
 #                    such that          L * sigma(h,T)   <   eps
 #                       where eps = min { (sd_i - sc),  (sd_i - sd{i-1}) }   [with minimum N value]
 #           Improve the existing point accuracy with the N_new and T_new.
-
+#%%
