@@ -327,9 +327,10 @@ import scipy.io as sio
 fm = sio.loadmat('/Users/shahrouz/Desktop/IC8.mat')
 
 d = fm['Drag']
-x = d[0][1]
+x = d[0][1]; 
+x1 = x[100:3000]
 m=4
-sigma2_N = stationary_statistical_learning_reduced(x,m)
+sigma2_N = stationary_statistical_learning_reduced(x1,m)
 
 
 
