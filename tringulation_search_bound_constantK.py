@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.spatial import Delaunay
+from scipy import optimize
 #%%
 def circhyp(x, N):
     # circhyp     Circumhypersphere of simplex
@@ -57,17 +58,17 @@ def tringulation_search_bound_constantK(inter_par,xi,K,ind_min):
     x = np.dot(xi[:,tri.simplices[ind,:]] , np.ones([n+1,1])/(n+1))
     xm,ym = Constant_K_Search(x,inter_par,xc,R2,K)
     # Local one
-    t = np.min(Sc)
-    ind = np.argmin(Sc)
+    t = np.min(Scl)
+    ind = np.argmin(Scl)
     R2,xc = circhyp(xi[:,tri.simplices[ind,:]],n)
     # Notice!! ind_min may have a problen as an index
-    x = np.copy(xi[:,ind_min-1])
+    x = np.copy(xi[:,ind_min])
     xml,yml = Constant_K_Search(x,inter_par,xc,R2,K)
     if yml < ym:
         xm = np.copy(xml)
         ym = np.copy(yml)
-    return xm.reshape(-1,1) ,ym
-        
+    return xm,ym
+#%%     
 def Constant_K_Search(x0,inter_par,xc,R2,K,lb=[],ub=[]):
 #    This funciron minimizes the search funciton in the specified simplex with xc as circumcenter of that simplex and R2 as the circumradius of that simplex
 #   the search funciton is: s(x) = p(x) - K e(x)
@@ -79,33 +80,36 @@ def Constant_K_Search(x0,inter_par,xc,R2,K,lb=[],ub=[]):
 #     global lb,ub
 #     costfun,costjac = lambda x:Contious_search_cost(x,inter_par,xc,R2,K)
     n = x0.shape[0]
-    costfun = lambda x: Contious_search_cost(x, inter_par, xc, R2, K)
-    costjac = lambda x: Contious_search_cost_grad(x, inter_par, xc, R2, K)
-    opt = {'disp':True}
+    costfun = lambda x: Contious_search_cost(x, inter_par, xc, R2, K,1)
+    costjac = lambda x: Contious_search_cost(x, inter_par, xc, R2, K,2)
+    opt={'disp': True}
     # TODO: boundas 0 to 1 all dimetnsions.. fix with lb and ub
     bnds = tuple([ (0,1) for i in range(int(n))])
-    x00 =x0
-    x0 = pd.DataFrame(x00).values
     # TODO: the output of minimize fucntion is np array (n,). For interpolte_val the input is (n,1)
     # TODO:  S=xi-x has problem in side this function
     # TODO: fix the input information for jacobi!!!!!!!!!!
-    res = optimize.minimize(costfun,x0,method='L-BFGS-B',bounds=bnds,options=opt)
-    x = res.x
-    y = res.fun
+    res = optimize.minimize(costfun,x0,jac=costjac,method='SLSQP',bounds=bnds,options=opt)
+    x = (res.x).reshape(-1,1)
+    y = Contious_search_cost(x, inter_par, xc, R2, K,1)
     return x,y
 
-
+# value of consatn K search
+def Contious_search_cost(x,inter_par,xc,R2,K,num_arg):
+    # if num_arg == 1: return M
+    # if num_arg == 2: return DM
+    M = interpolate_val(x,inter_par) - K*(R2 - np.linalg.norm(x-xc)**2)
+    DM = interpolate_grad(x,inter_par).reshape(-1,1) + 2*K*(x-xc)
+    if num_arg == 1:
+        return M
+    if num_arg == 2:
+        return DM.T[0]
+#%%
 #gradient of soncstant K search
 def Contious_search_cost_grad(x,inter_par,xc,R2,K):
     DM = interpolate_grad(x,inter_par).reshape(-1,1) + 2*K*(x-xc)
-    dm = pd.DataFrame(DM)
     return DM.T
     # return dm.values
 
-# value of consatn K search
-def Contious_search_cost(x,inter_par,xc,R2,K):
-    M = interpolate_val(x,inter_par) - K*(R2 - np.linalg.norm(x-xc)**2)
-    return M
 # Muhan-->implementaiton #TODO
 # def Contious_search_cost(x,inter_par,xc,R2,K):
 #     M = interpolate_val(x,inter_par) - K*(R2 - np.linalg.norm(x-xc)**2)
@@ -116,7 +120,7 @@ def Contious_search_cost(x,inter_par,xc,R2,K):
 #     return M
 # #%%
 
-#%%
+
 def interpolate_val(x, inter_par):
     if inter_par.method == "NPS":
         w = inter_par.w
@@ -128,7 +132,7 @@ def interpolate_val(x, inter_par):
         except:
             S =  xi - np.tile(x.reshape(-1,1),xi.shape[1])
             return np.dot(v.T, np.concatenate([np.ones(1), x], axis=0).reshape(-1,1)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
-#%%
+
 def interpolate_grad(x, inter_par):
     if inter_par.method == "NPS":
         w = inter_par.w
@@ -168,21 +172,17 @@ def expecting():
         return 0
     return 1
 #%%
-
-
-
-
-
-inter_par = Inter_par("NPS")
-xi = np.array([[0.5,0.8,0.2,0.6]])
-fun = lambda x:  np.multiply(x-0.45,x-0.45)
-yi = fun(xi)
-print(yi)
-K = 3
-inter_par = interpolateparameterization(xi,yi,inter_par)
-ymin = np.min(yi)
-ind_min = np.argmin(yi)
-xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
+#
+#inter_par = Inter_par("NPS")
+#xi = np.array([[0.5,0.8,0.2,0.6]])
+#fun = lambda x:  np.multiply(x-0.45,x-0.45)
+#yi = fun(xi)
+#print(yi)
+#K = 3
+#inter_par = interpolateparameterization(xi,yi,inter_par)
+#ymin = np.min(yi)
+#ind_min = np.argmin(yi)
+#xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
 #%%
 
 
@@ -192,9 +192,11 @@ def fun(x,  alpha=0.1):
     return y.T
 #    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
 
-
+from Utils import Inter_par
+from Utils import interpolateparameterization
 inter_par = Inter_par("NPS")
 xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
+K = 2
 #xi=np.random.rand(2,3)
 #x=np.array([[0.5],[0.5]])
 #yi=np.random.rand(1,3)
@@ -208,15 +210,7 @@ inter_par = interpolateparameterization(xi, yi, inter_par)
 
 ymin = np.min(yi)
 ind_min = np.argmin(yi)
-xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
 #%%
-def test(x,y):
-    n_a = expecting()
-    if n_a > 1:
-        return x+y,x-y
-    return x*y
-c1,s1 = test(11,2)
-print('c1',c1,'s1',s1)
-#ft = lambda x:test(x,2)
-#c,s = ft(11)
-#print(c)
+xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
+print(xm)
+print(ym)
