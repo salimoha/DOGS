@@ -109,11 +109,11 @@ def regressionparametarization(xi,yi, sigma, inter_par):
     N = xi.shape[1]
     if inter_par.method == 'NPS':
         A = np.zeros(shape=(N, N))
-        for ii in range(0, N, 1):  # for ii =0 to m-1 with step 1; range(1,N,1)
-            for jj in range(0, N, 1):
+        for ii in range(N):  # for ii =0 to m-1 with step 1; range(1,N,1)
+            for jj in range(N):
                 A[ii, jj] = (np.dot(xi[:, ii] - xi[:, jj], xi[:, ii] - xi[:, jj])) ** (3.0 / 2.0)
         V = np.concatenate((np.ones((1, N)), xi), axis=0)
-        w1 = np.linalg.lstsq((np.dot(np.diag(np.divide(1, sigma[0])), V.T)), np.divide(yi, sigma).T)
+        w1 = np.linalg.lstsq(np.dot(np.diag(1/sigma), V.T), (yi/sigma).reshape(-1,1))
         w1 = np.copy(w1[0])
         b = np.mean(np.divide(np.dot(V.T,w1)-yi.reshape(-1,1),sigma)**2)
         wv = np.zeros([N+n+1])
@@ -137,7 +137,7 @@ def regressionparametarization(xi,yi, sigma, inter_par):
             if residual < 2:
                 break
             rho *= 0.9
-            b,db,wv = smoothing_polyharmonic(rho,A,V,sigma,yi,n,N)
+            b,db,wv = smoothing_polyharmonic(rho,A,V,sigma,yi,n,N,3)
             inter_par.w = wv[:N]
             inter_par.v = wv[N:]
     return inter_par, yp
@@ -211,7 +211,10 @@ def mindis(x, xi):
     # % calculates the minimum distance from all the existing points
     # % xi all the previous points
     # % x the new point
+    x = x.reshape(-1,1)
     y = float('inf')
+    index = float('inf')
+    x1 = np.copy(x) * float('inf')
     N = xi.shape[1]
     for i in range(N):
         y1 = np.linalg.norm(x[:, 0] - xi[:, i])
@@ -264,7 +267,7 @@ def vertex_find(A, b, lb, ub):
                                 x[index_B - 1] = F[:, kk]
                                 x[index_B_C - 1] = xd
                                 if r == m or (np.dot(A[index_A_C - 1, :], x) - b[index_A_C - 1]).min() < 0:
-                                    [y, x1, index] = mindis(x, Vertex)
+                                    [y, index, x1] = mindis(x, Vertex)
 
                                     if (x - ub).max() < 1e-6 and (x - lb).min() > -1e-6 and y > 1e-6:
                                         Vertex = np.column_stack((Vertex, x))
@@ -299,106 +302,84 @@ def vertex_find(A, b, lb, ub):
 from scipy.spatial import Delaunay
 
 
-
-def tringulation_search_bound_constantK(inter_par, xi, K, ind_min):
+def tringulation_search_bound_constantK(inter_par,xi,K,ind_min):
     n = xi.shape[0]
     # [R2, xC] = utl.circhyp(xi[:, tri.simplices[ind, :]], n)
     tri = Delaunay(xi.T)  # fix for 1D
     Sc = np.zeros([np.shape(tri.simplices)[0]])
     Scl = np.zeros([np.shape(tri.simplices)[0]])
     for ii in range(np.shape(tri.simplices)[0]):
-        R2, xc = circhyp(xi[:, tri.simplices[ii, :]], n)
-        x = np.dot(xi[:, tri.simplices[ii, :]], np.ones([n + 1, 1]) / (n + 1))
-        Sc[ii] = interpolate_val(x, inter_par) - K * (R2 - np.linalg.norm(x - xc) ** 2)
-        if np.sum(ind_min == tri.simplices[ii, :]):
+        R2, xc = circhyp(xi[:,tri.simplices[ii,:]],n)
+        x = np.dot(xi[:,tri.simplices[ii,:]] , np.ones([n+1,1])/(n+1))
+        Sc[ii] = interpolate_val(x,inter_par) - K * (R2 - np.linalg.norm(x-xc)**2)
+        if np.sum(ind_min == tri.simplices[ii,:]):
             Scl[ii] = Sc[ii]
         else:
             Scl[ii] = np.inf
-    # Global one
+    # Global one    
     t = np.min(Sc)
     ind = np.argmin(Sc)
-    R2, xc = circhyp(xi[:, tri.simplices[ind, :]], n)
-    x = np.dot(xi[:, tri.simplices[ind, :]], np.ones([n + 1, 1]) / (n + 1))
-    xm, ym = Constant_K_Search(x, inter_par, xc, R2, K)
+    R2, xc = circhyp(xi[:,tri.simplices[ind,:]],n)
+    x = np.dot(xi[:,tri.simplices[ind,:]] , np.ones([n+1,1])/(n+1))
+    xm,ym = Constant_K_Search(x,inter_par,xc,R2,K)
     # Local one
-    t = np.min(Sc)
-    ind = np.argmin(Sc)
-    R2, xc = circhyp(xi[:, tri.simplices[ind, :]], n)
+    t = np.min(Scl)
+    ind = np.argmin(Scl)
+    R2,xc = circhyp(xi[:,tri.simplices[ind,:]],n)
     # Notice!! ind_min may have a problen as an index
-    x = np.copy(xi[:, ind_min - 1])
-    xml, yml = Constant_K_Search(x, inter_par, xc, R2, K)
+    x = np.copy(xi[:,ind_min])
+    xml,yml = Constant_K_Search(x,inter_par,xc,R2,K)
     if yml < ym:
         xm = np.copy(xml)
         ym = np.copy(yml)
-    return xm.reshape(-1, 1), ym
-
-
-def Constant_K_Search(x0, inter_par, xc, R2, K, lb=[], ub=[]):
-    #    This funciron minimizes the search funciton in the specified simplex with xc as circumcenter of that simplex and R2 as the circumradius of that simplex
-    #   the search funciton is: s(x) = p(x) - K e(x)
-    #   where the p(x) is the surrogate model: usually polyharmonic spline (RBF) phi = r^3
-    #   the artificali uncertatintiy fucniton is：e(x) = R2-norm(x-xc)
-    #   K: is a constant paramtere that specifies a tradeoff bwtween gloabl exploration (e - K large) and local refinemnet (p - K small)
-    #   K is dependant on the mesh size. Its changes is proporstional  to the inverse of the rate as mesh size.
-    #    Initially the algorithm tends to explore globally. and as the algorithm procceeds it becomes dense at the position of a global minimizer.
-    #     global lb,ub
-    #     costfun,costjac = lambda x:Contious_search_cost(x,inter_par,xc,R2,K)
+    return xm,ym
+   
+def Constant_K_Search(x0,inter_par,xc,R2,K,lb=[],ub=[]):
+#    This funciron minimizes the search funciton in the specified simplex with xc as circumcenter of that simplex and R2 as the circumradius of that simplex
+#   the search funciton is: s(x) = p(x) - K e(x)
+#   where the p(x) is the surrogate model: usually polyharmonic spline (RBF) phi = r^3
+#   the artificali uncertatintiy fucniton is：e(x) = R2-norm(x-xc)
+#   K: is a constant paramtere that specifies a tradeoff bwtween gloabl exploration (e - K large) and local refinemnet (p - K small) 
+#   K is dependant on the mesh size. Its changes is proporstional  to the inverse of the rate as mesh size. 
+#    Initially the algorithm tends to explore globally. and as the algorithm procceeds it becomes dense at the position of a global minimizer.
+#     global lb,ub
+#     costfun,costjac = lambda x:Contious_search_cost(x,inter_par,xc,R2,K)
     n = x0.shape[0]
-    costfun = lambda x: Contious_search_cost(x, inter_par, xc, R2, K)
-    costjac = lambda x: Contious_search_cost_grad(x, inter_par, xc, R2, K)
-    opt = {'disp': True}
+    costfun = lambda x: Contious_search_cost(x, inter_par, xc, R2, K,1)
+    costjac = lambda x: Contious_search_cost(x, inter_par, xc, R2, K,2)
+    opt={'disp': False}
     # TODO: boundas 0 to 1 all dimetnsions.. fix with lb and ub
-    bnds = tuple([(0, 1) for i in range(int(n))])
-    x00 = x0
-    x0 = pd.DataFrame(x00).values
-    # TODO: the output of minimize fucntion is np array (n,). For interpolte_val the input is (n,1)
-    # TODO:  S=xi-x has problem in side this function
-    # TODO: fix the input information for jacobi!!!!!!!!!!
-    res = optimize.minimize(costfun, x0, method='L-BFGS-B', bounds=bnds, options=opt)
+    bnds = tuple([ (0,1) for i in range(int(n))])
+    res = optimize.minimize(costfun,x0,jac=costjac,method='TNC',bounds=bnds,options=opt)
     x = res.x
     y = res.fun
-    return x, y
-
-
-# gradient of soncstant K search
-def Contious_search_cost_grad(x, inter_par, xc, R2, K):
-    DM = interpolate_grad(x, inter_par).reshape(-1, 1) + 2 * K * (x - xc)
-    dm = pd.DataFrame(DM)
-    return DM.T
-    # return dm.values
-
+    return x,y
 
 # value of consatn K search
-def Contious_search_cost(x, inter_par, xc, R2, K):
-    M = interpolate_val(x, inter_par) - K * (R2 - np.linalg.norm(x - xc) ** 2)
-    return M
-
-
-# Muhan-->implementaiton #TODO
-# def Contious_search_cost(x,inter_par,xc,R2,K):
-#     M = interpolate_val(x,inter_par) - K*(R2 - np.linalg.norm(x-xc)**2)
-#     num_arguments = expecting()
-#     if num_arguments > 1:
-#         DM = interpolate_grad(x,inter_par) + 2*K*(x-xc)
-#         return M,DM
-#     return M
-# #%%
-
+def Contious_search_cost(x,inter_par,xc,R2,K,num_arg):
+    # if num_arg == 1: return M
+    # if num_arg == 2: return DM
+    x = x.reshape(-1,1)
+    M = interpolate_val(x,inter_par) - K*(R2 - np.linalg.norm(x-xc)**2)
+    DM = interpolate_grad(x,inter_par) + 2*K*(x-xc)
+    if num_arg == 1:
+        return M
+    if num_arg == 2:
+        return DM.T
+    #TODO May have problem the shape of x.
 
 def interpolate_val(x, inter_par):
+    # TODO each time after optimization, the result value x that optimization returns is one dimension vector,
+    # but in our interpolate_val function, we need it to be a two dimension matrix.
+    x = x.reshape(-1,1)
     if inter_par.method == "NPS":
         w = inter_par.w
         v = inter_par.v
         xi = inter_par.xi
-        try:
-            S = xi - x
-            return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, (
-            np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
-        except:
-            S = xi - np.tile(x.reshape(-1, 1), xi.shape[1])
-            return np.dot(v.T, np.concatenate([np.ones(1), x], axis=0).reshape(-1, 1)) + np.dot(w.T, (
-            np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
-
+        x1 = np.copy(x)
+        x = pd.DataFrame(x1).values
+        S = xi - x
+        return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, ( np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
 
 
 def interpolate_grad(x, inter_par):
@@ -408,20 +389,15 @@ def interpolate_grad(x, inter_par):
         xi = inter_par.xi
         n = x.shape[0]
         N = xi.shape[1]
-        g = np.zeros((n))
-        x1 = np.copy(x)
+        g = np.zeros([n,1])
+        x1=np.copy(x)
         x = pd.DataFrame(x1).values
         for ii in range(N):
-            X = x[:, 0] - xi[:, ii]
-            g = g + 3 * w[ii] * X.T * np.linalg.norm(X)
-        # print("--------------")
-        #                 print v[ii]
-        #             print(g)
-        #             print("--------------")
-        #             print(v[1:])
-        g = g + v[1:, 0]
+            X = x - xi[:, ii].reshape(-1,1)
+            g = g + 3 * w[ii] * X * np.linalg.norm(X)
+        g = g + v[1:]
 
-        return g.T
+        return g
 
     def inter_min(x, inter_par, Ain=[], bin=[]):
         # %find the minimizer of the interpolating function starting with x
@@ -451,8 +427,8 @@ def ismember(A,B):
     return [np.sum(a == B) for a in A]
 
 def points_neighbers_find(x,xE,xU,Bin,Ain):
-    [delta_general, index,x1] = mindis(x, np.concatenate((xE,xU ), axis=1) )
-    
+    #delta_general, index1,x1 = mindis(x, np.concatenate((xE,xU ), axis=1) )
+    x1 = mindis(x, np.concatenate((xE,xU ), axis=1) )[2]
     active_cons = []
     b = Bin - np.dot(Ain,x)
     for i in range(len(b)):
@@ -470,7 +446,7 @@ def points_neighbers_find(x,xE,xU,Bin,Ain):
     if len(active_cons) == 0 or min(ismember(active_cons,active_cons1)) == 1:
         newadd = 1
         success = 1
-        if mindis(x,xU) == 0:
+        if mindis(x,xU)[0] == 0:
             newadd = 0
     else:
         success = 0

@@ -267,7 +267,7 @@ fm = sio.loadmat('/Users/kimukook/IC8.mat')
 
 d = fm['Drag']
 x = d[0][1]; 
-x1 = x[10**5:1.2*10**5]
+x1 = x[5000:10000]
 m=4
 #%%
 sigma2_N,theta,moment2_model = stationary_statistical_learning_reduced(x1,m)
