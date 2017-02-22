@@ -428,6 +428,7 @@ def ismember(A,B):
 
 def points_neighbers_find(x,xE,xU,Bin,Ain):
     #delta_general, index1,x1 = mindis(x, np.concatenate((xE,xU ), axis=1) )
+    x = x.reshape(-1,1)
     x1 = mindis(x, np.concatenate((xE,xU ), axis=1) )[2]
     active_cons = []
     b = Bin - np.dot(Ain,x)
@@ -451,5 +452,5 @@ def points_neighbers_find(x,xE,xU,Bin,Ain):
     else:
         success = 0
         newadd = 0
-        xU = np.concatenate((xU,x),axis=0)
+        xU = np.hstack((xU,x))
     return x, xE, xU, newadd, success	

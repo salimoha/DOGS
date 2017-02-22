@@ -72,8 +72,8 @@ for ff in range(nff):
         K0 = np.ptp(yE, axis=0)
         #Calculate the discrete function.
         tmp = yp+SigmaT
-        yt = np.amin(tmp, 0)
-        ind_out = np.argmin(tmp, 0)
+        yt = np.amin(tmp)
+        ind_out = np.argmin(tmp)
 #        sd = np.amin((yp, 2 * yE - yp) - L * SigmaT, 0)
         sd = np.amin((yp, 2 * yE - yp),0) - L * SigmaT
         
@@ -89,22 +89,21 @@ for ff in range(nff):
             yE[ind_exist] = ((fun(xd)) + yE[ind_exist] * T[ind_exist]) / (T[ind_exist]+1)
             T[ind_exist] = T[ind_exist]+1
         else:
-            print('csssss')
             tmp1 = np.divide(sigma0 , np.sqrt(T[ind_exist]))
             tmp2 = 0.01 * np.ptp(yE, axis=0) * (max(ub - lb)) / Nm
             if tmp1 < tmp2:
                 yd = np.inf
 
             # Calcuate the unevaluated function:
-            yu = np.zeros(xU.shape[1]) 
-            if xU.shape[1]!=0:
+            yu = np.zeros([1,xU.shape[1]]) 
+            if xU.shape[1] != 0:
                 for ii in range(xU.shape[1]):
                     tmp = Utils.interpolate_val(xU[:, ii], inter_par)-np.amin(yp,0)
-                    yu[ii] = tmp / Utils.mindis(xU[:, ii], xE)[0]
+                    yu[0,ii] = tmp / Utils.mindis(xU[:, ii], xE)[0]
 
-            if xU.shape[1]!=0 and np.min(yu) < 0:
-                t = np.amin(yu, 0)
-                ind = np.argmin(yu, 0)
+            if xU.shape[1] != 0 and np.min(yu) < 0:
+                t = np.amin(yu)
+                ind = np.argmin(yu)
                 xc = xU[:, ind]
                 yc = -np.inf
                 xU = scipy.delete(xU,ind,1) #create empty array
@@ -128,9 +127,9 @@ for ff in range(nff):
 
                 if xU.shape[1] != 0:
                     tmp = (Utils.interpolate_val(xc, inter_par) - min(yp)) / Utils.mindis(xc, xE)[0]
-                    if (np.amin(yu, 0)) < tmp:
-                        t = np.amin(yu, 0)
-                        ind = np.argmin(yu, 0)
+                    if (np.amin(yu)) < tmp:
+                        t = np.amin(yu)
+                        ind = np.argmin(yu)
                         xc = xU[:, ind]
                         yc = -np.inf
                         xU = scipy.delete(xU,ind,1)  # create empty array
@@ -140,11 +139,8 @@ for ff in range(nff):
                 K = 2 * K
                 Nm = 2 * Nm
                 L = L + L0
-            print(yc)
             if yc < yd:
-                print('====1111====')
                 if Utils.mindis(xc, xE)[0] > 1e-6:
-                    print('====22222222====')
                     xE = np.concatenate([xE, xc.reshape(-1,1)],axis=1)
                     yE = np.concatenate((yE, np.array([fun(lb + (ub - lb) * xc)])))
                     T = np.hstack((T,1))
@@ -174,3 +170,4 @@ for ff in range(nff):
 #                    such that          L * sigma(h,T)   <   eps
 #                       where eps = min { (sd_i - sc),  (sd_i - sd{i-1}) }   [with minimum N value]
 #           Improve the existing point accuracy with the N_new and T_new.
+#%%
