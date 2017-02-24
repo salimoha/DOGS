@@ -39,28 +39,38 @@ def circhyp(x, N):
 
 def tringulation_search_bound_constantK(inter_par,xi,K,ind_min):
     n = xi.shape[0]
-    # [R2, xC] = utl.circhyp(xi[:, tri.simplices[ind, :]], n)
-    tri = Delaunay(xi.T)  # fix for 1D
-    Sc = np.zeros([np.shape(tri.simplices)[0]])
-    Scl = np.zeros([np.shape(tri.simplices)[0]])
-    for ii in range(np.shape(tri.simplices)[0]):
-        R2, xc = circhyp(xi[:,tri.simplices[ii,:]],n)
-        x = np.dot(xi[:,tri.simplices[ii,:]] , np.ones([n+1,1])/(n+1))
+    if n == 1:
+        sx = sorted(range(xi.shape[1]),key = lambda x: xi[:,x])
+        tri = np.zeros((xi.shape[1]-1,2))
+        tri[:,0] = sx[:xi.shape[1]-1]
+        tri[:,1] = sx[1:]
+        tri = tri.astype(np.int32)
+    else:
+        tristruct = Delaunay(xi.T)  # fix for 1D
+        tri = tristruct.simplices
+    Sc = np.zeros([np.shape(tri)[0]])
+    print(tri)
+    print(Sc)
+    Scl = np.zeros([np.shape(tri)[0]])
+    for ii in range(np.shape(tri)[0]):
+        R2, xc = circhyp(xi[:,tri[ii,:]],n)
+        x = np.dot(xi[:,tri[ii,:]] , np.ones([n+1,1])/(n+1))
         Sc[ii] = interpolate_val(x,inter_par) - K * (R2 - np.linalg.norm(x-xc)**2)
-        if np.sum(ind_min == tri.simplices[ii,:]):
+        if np.sum(ind_min == tri[ii,:]):
             Scl[ii] = Sc[ii]
         else:
             Scl[ii] = np.inf
-    # Global one    
+    # Global one 
+    print(Sc)
     t = np.min(Sc)
     ind = np.argmin(Sc)
-    R2, xc = circhyp(xi[:,tri.simplices[ind,:]],n)
-    x = np.dot(xi[:,tri.simplices[ind,:]] , np.ones([n+1,1])/(n+1))
+    R2, xc = circhyp(xi[:,tri[ind,:]],n)
+    x = np.dot(xi[:,tri[ind,:]] , np.ones([n+1,1])/(n+1))
     xm,ym = Constant_K_Search(x,inter_par,xc,R2,K)
     # Local one
     t = np.min(Scl)
     ind = np.argmin(Scl)
-    R2,xc = circhyp(xi[:,tri.simplices[ind,:]],n)
+    R2,xc = circhyp(xi[:,tri[ind,:]],n)
     # Notice!! ind_min may have a problen as an index
     x = np.copy(xi[:,ind_min])
     xml,yml = Constant_K_Search(x,inter_par,xc,R2,K)
@@ -185,32 +195,31 @@ def expecting():
 #xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
 #%%
 
-
-
-def fun(x,  alpha=0.1):
-    y = np.array((x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0)
-    return y.T
-#    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
-
-from Utils import Inter_par
-from Utils import interpolateparameterization
-inter_par = Inter_par("NPS")
-xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
-K = 2
-#xi=np.random.rand(2,3)
-#x=np.array([[0.5],[0.5]])
-#yi=np.random.rand(1,3)
-yi=fun(xi)
-print (yi)
-#yi = np.array(yi)
-#print(yi.shape)
-#print(xi.shape)
 #
-inter_par = interpolateparameterization(xi, yi, inter_par)
-
-ymin = np.min(yi)
-ind_min = np.argmin(yi)
+#
+#def fun(x,  alpha=0.1):
+#    y = np.array((x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0)
+#    return y.T
+##    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
+#
+#from Utils import Inter_par
+#from Utils import interpolateparameterization
+#inter_par = Inter_par("NPS")
+#xi = np.array([[0.5000 , 0.8000   , 0.5000,    0.2000,    0.5000],  [0.5000,    0.5000,    0.8000,    0.5000,    0.2000]])
+#K = 2
+##xi=np.random.rand(2,3)
+##x=np.array([[0.5],[0.5]])
+##yi=np.random.rand(1,3)
+#yi=fun(xi)
+#print (yi)
+##yi = np.array(yi)
+##print(yi.shape)
+##print(xi.shape)
+##
+#inter_par = interpolateparameterization(xi, yi, inter_par)
+#
+#ymin = np.min(yi)
+#ind_min = np.argmin(yi)
 #%%
-xm,ym = tringulation_search_bound_constantK(inter_par,xi,K,ind_min)
-print(xm)
-print(ym)
+#import Utils
+xc, yc = tringulation_search_bound_constantK(inter_par, np.hstack([xE, xU]), K * K0, ind_min)

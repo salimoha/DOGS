@@ -5,30 +5,29 @@ import Utils
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
-
 #%%
 np.set_printoptions(linewidth=200, precision=5, suppress=True)
 pd.options.display.max_rows = 20
 pd.options.display.expand_frame_repr = False
 
-import pylab as plt
-
-
 
 # This script shows the alpha DOGS main code
 
 # dimenstion is n
-n = 2
+n = 1
 # the noise level
-sigma0 = 0.1
+sigma0 = 0.01
 
-# truth function quadratic:
+# truth function 
+# quadratic:
 funr = lambda x: 5*norm(x-0.3)**2
 fun = lambda x: 5*norm(x-0.3)**2 + sigma0 * np.random.rand()
 
 # schewfel
-#funr = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x))))) / 250
-#fun = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x))))) / 250 + sigma0 * np.random.rand()
+#funr = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x)))))[0] / 250
+#fun = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x)))))[0] / 250 + sigma0 * np.random.rand()
+
+# rastinginn function
 
 lb = np.zeros((n,1))
 ub = np.ones((n,1))
@@ -43,9 +42,9 @@ iter_max = 50  # maximum number of iterations:
 inter_method = 1  # polyharmonic spline
 
 # Calculate the Initial trinagulation points
-Nm = 8  # initial mesh grid size
+Nm = 100  # initial mesh grid size
 L0 = 1  # discrete 1 search function constant
-K = 3  # continous search function constant
+K = 10  # continous search function constant
 
 nff = 1
 
@@ -60,11 +59,11 @@ fig.subplots_adjust(hspace = .5)
 for ff in range(nff):
 
     #initialization: initial triangulation points
-#    xE = np.random.rand(n,n+1)
-#    xE = np.round(xE*Nm)/Nm  # quantize the points
-    xE = np.array([[0.125,0.375,0.375],[0.625,0.,0.9]])
+    xE = np.random.rand(n,n+1)
+    xE = np.round(xE*Nm)/Nm  # quantize the points
+#    xE = np.array([[0.125,0.375,0.375],[0.625,0.,0.9]])
     # Calculate the function at initial points
-    yE = np.zeros(xE.shape[1])
+    yE = np.zeros(xE.shape[1]) 
     yr = np.zeros(xE.shape[1])
     T = np.zeros(xE.shape[1])
     for ii in range(xE.shape[1]):
@@ -151,7 +150,6 @@ for ff in range(nff):
                 L = L + L0
             if yc < yd:
                 if Utils.mindis(xc, xE)[0] > 1e-6:
-                    # TODO try np.append
                     xE = np.concatenate([xE, xc.reshape(-1,1)],axis=1)
                     yE = np.concatenate((yE, np.array([fun(lb + (ub - lb) * xc)])))
                     T = np.hstack((T,1))
@@ -165,7 +163,8 @@ for ff in range(nff):
         estimate[ff, k] = yE[ind_out]
         datalength[ff, k] = np.shape(xE)[1]
         mesh[ff, k] = Nm
-
+        # plot the minimum of yE and it's error
+        # plot the changing of added points
         color=cm.rainbow(np.linspace(0,1,xE.shape[1]))
         if plot_index:
             ax0.errorbar(range(1,len(yE)+1),yE,yerr=SigmaT)
@@ -173,7 +172,8 @@ for ff in range(nff):
             for i,c in zip(range(xE.shape[0]),color):
                 ax1.plot(range(1,len(yE)+1),xE[i],c=c)
             ax1.set_title("x1 and x2")
-
+            
+# plot estimate regret and datalength
 if 1:
     plt.figure()
     plt.plot(range(1,iter_max+1),estimate[0],'-')
@@ -184,6 +184,19 @@ if 1:
     plt.figure()
     plt.plot(range(1,iter_max+1),datalength[0],'--')
     plt.title("datalength")
+
+# plot the contourf
+if n == 2:
+    plt.figure()
+    xlist = np.linspace(0,1.0,200)
+    ylist = np.linspace(0,1.0,200)
+    X,Y = np.meshgrid(xlist,ylist)
+    Z = (-np.multiply(X,np.sin(np.sqrt(abs(500*X)))) - np.multiply(Y,np.sin(np.sqrt(abs(500*Y)))))/250
+    cp = plt.contourf(X,Y,Z,cmap='gray')
+    plt.colorbar(cp)
+    plt.plot(xE[0,-5:],xE[1,-5:],'wo')
+    plt.plot(xE[0,:-6],xE[1,:-6],'bo')
+
     
 ################################################################################################################
 #square
@@ -199,4 +212,3 @@ if 1:
 #                    such that          L * sigma(h,T)   <   eps
 #                       where eps = min { (sd_i - sc),  (sd_i - sd{i-1}) }   [with minimum N value]
 #           Improve the existing point accuracy with the N_new and T_new.
-#%%
