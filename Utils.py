@@ -454,3 +454,20 @@ def points_neighbers_find(x,xE,xU,Bin,Ain):
         newadd = 0
         xU = np.hstack((xU,x))
     return x, xE, xU, newadd, success	
+    
+    
+    
+    
+def rastriginn2(x):
+#    n = x.shape[0]
+    n=2
+    x = x.reshape(-1,1)
+    x=2*(x-0.7)
+    A=3;
+    y = A * n
+    for ii in range(n):
+        y = y + (x[ii,:]**2 - A* np.cos(2 * np.pi * x[ii,:]))
+    return y[0]/6.0
+    
+
+
