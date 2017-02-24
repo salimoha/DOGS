@@ -9,17 +9,7 @@ import pylab as plt
 
 from scipy import optimize
 
-class Inter_par():
-    def __init__(self,method="NPS", w=0, v=0, xi=0,a=0):
-        self.method = "NPS"
-        self.w=[]
-        self.v=[]
-        self.xi=[]
-        self.a=[]
-
-
-
-def regressionparametarization(xi, yi, sigma, inter_par):
+def regressionparametarization(xi,yi, sigma, inter_par):
     # Notice xi, yi and sigma must be a two dimension matrix, even if you want it to be a vector.
     # or there will be error
     n = xi.shape[0]
@@ -32,51 +22,51 @@ def regressionparametarization(xi, yi, sigma, inter_par):
         V = np.concatenate((np.ones((1, N)), xi), axis=0)
         w1 = np.linalg.lstsq((np.dot(np.diag(np.divide(1, sigma[0])), V.T)), np.divide(yi, sigma).T)
         w1 = np.copy(w1[0])
-        b = np.mean(np.divide(np.dot(V.T, w1) - yi.reshape(-1, 1), sigma) ** 2)
-        wv = np.zeros([N + n + 1])
+        b = np.mean(np.divide(np.dot(V.T,w1)-yi.reshape(-1,1),sigma)**2)
+        wv = np.zeros([N+n+1])
         if b < 1:
             wv[N:] = np.copy(w1.T)
             rho = 1000
-            wv = np.copy(wv.reshape(-1, 1))
+            wv = np.copy(wv.reshape(-1,1))
         else:
             rho = 1.1
-            fun = lambda rho: smoothing_polyharmonic(rho, A, V, sigma, yi, n, N, 1)
-            sol = optimize.fsolve(fun, rho)
-            b, db, wv = smoothing_polyharmonic(sol, A, V, sigma, yi, n, N, 3)
+            fun = lambda rho:smoothing_polyharmonic(rho,A,V,sigma,yi,n,N,1)
+            sol = optimize.fsolve(fun,rho)
+            b,db,wv = smoothing_polyharmonic(sol,A,V,sigma,yi,n,N,3)
         inter_par.w = wv[:N]
         inter_par.v = wv[N:]
         inter_par.xi = xi
         yp = np.zeros([N])
-        while (1):
+        while(1):
             for ii in range(N):
-                yp[ii] = interpolate_val(xi[:, ii], inter_par)
-            residual = np.max(np.divide(np.abs(yp - yi), sigma[0]))
+                yp[ii] = interpolate_val(xi[:,ii],inter_par)
+            residual = np.max(np.divide(np.abs(yp-yi),sigma[0]))
             if residual < 2:
                 break
             rho *= 0.9
-            b, db, wv = smoothing_polyharmonic(rho, A, V, sigma, yi, n, N)
+            b,db,wv = smoothing_polyharmonic(rho,A,V,sigma,yi,n,N)
             inter_par.w = wv[:N]
             inter_par.v = wv[N:]
     return inter_par, yp
+    
 
-
-def smoothing_polyharmonic(rho, A, V, sigma, yi, n, N, num_arg):
+def smoothing_polyharmonic(rho, A, V, sigma, yi, n, N,num_arg):
     # Notice: num_arg = 1 will return b
     #         num_arg = else will return b,db,wv
     A01 = np.concatenate((A + rho * np.diag(sigma ** 2), np.transpose(V)), axis=1)
     A02 = np.concatenate((V, np.zeros(shape=(n + 1, n + 1))), axis=1)
     A1 = np.concatenate((A01, A02), axis=0)
-    b1 = np.concatenate([yi.reshape(-1, 1), np.zeros(shape=(n + 1, 1))])
+    b1 = np.concatenate([yi.reshape(-1,1), np.zeros(shape=(n + 1, 1))])
     wv = np.linalg.solve(A1, b1)
-    b = np.mean(np.multiply(wv[:N], sigma) ** 2 * rho ** 2) - 1
-    bdwv = np.concatenate([np.multiply(wv[:N], sigma.reshape(-1, 1) ** 2), np.zeros((n + 1, 1))])
+    b = np.mean(np.multiply(wv[:N],sigma)**2*rho**2) - 1
+    bdwv = np.concatenate([np.multiply(wv[:N],sigma.reshape(-1,1)**2), np.zeros((n + 1, 1))])
     Dwv = np.linalg.solve(-A1, bdwv)
-    db = 2 * np.mean(np.multiply(wv[:N] ** 2 * rho + rho ** 2 * np.multiply(wv[:N], Dwv[:N]), sigma ** 2))
+    db = 2 * np.mean(np.multiply(wv[:N]**2*rho + rho**2*np.multiply(wv[:N],Dwv[:N]),sigma**2))
     if num_arg == 1:
         return b
     else:
-        return b, db, wv
-
+        return b,db,wv
+    
 
 def interpolate_val(x, inter_par):
     if inter_par.method == "NPS":
@@ -87,74 +77,31 @@ def interpolate_val(x, inter_par):
         # Usually x is a column extracted from xi, then x becomes a one-dimension vector, when xi is two-dimension matrix.
         # We need to convert x to be a two dimension vector. So I reshape x.
         n = xi.shape[0]  # Row of xi
-        x = np.copy(x.reshape(n, 1))  # Similar to add a newaxis to x
+        x = np.copy(x.reshape(n,1)) # Similar to add a newaxis to x
         S = xi - x
         #             print np.dot(v.T,np.concatenate([np.ones((1,1)),x],axis=0)) + np.dot(w.T,np.sqrt(np.diag(np.dot(S.T,S))))**3
         return np.dot(v.T, np.concatenate([np.ones((1, 1)), x], axis=0)) + np.dot(w.T, (np.sqrt(np.diag(np.dot(S.T, S))) ** 3))
 
-
-def fun(x, alpha=0.1):
-    y = np.array((x[0, :] - 0.45) ** 2.0 + alpha * (x[1, :] - 0.45) ** 2.0)
+def fun(x,  alpha=0.1):
+    y = np.array((x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0)
     return y.T
-
-
 #    return (x[0,:]-0.45)**2.0 + alpha*(x[1,:]-0.45)**2.0
 
 class Inter_par():
-    def __init__(self, method="NPS", w=0, v=0, xi=0, a=0):
+    def __init__(self,method="NPS", w=0, v=0, xi=0,a=0):
         self.method = "NPS"
-        self.w = []
-        self.v = []
-        self.xi = []
-        self.a = []
-
-
-# %%
-
-
-def fun(x, alpha=0.1):
-    y = np.array((x[0, :] - 0.45) ** 2.0 ) + alpha*np.random.rand()
-    return y.T
-def funr(x, alpha=0.1):
-    y = np.array((x[0, :] - 0.45) ** 2.0 )
-    return y.T
+        self.w=[]
+        self.v=[]
+        self.xi=[]
+        self.a=[]
+#%%
 inter_par = Inter_par(method="NPS")
-xi = np.array([[0.1000,  0.45000, 0.8]])
-# yi = np.array([[0.0049, 0.2169, 0.0473, 0.0293,  0.029, 0.2529, 0.8425]])
-yi = fun(xi)
-# yr = funr(xi)
-yi = yi[np.newaxis, :]
-# yr = yr[np.newaxis, :]
-# yi = np.array([[0.0049, 0.2169, 0.0473, 0.0293,  0.029, 0.2529, 0.8425]])
-sigma = np.array([[0.120, 0.01000, 0.1000]])
-inter_par, yp1 = regressionparametarization(xi, yi, sigma, inter_par)
-print('yp', yp1)
+xi = np.array([[0,0.1000,0.2000,0.3000,0.5000,1]])
+yi=np.array([[0.0049,0.2169,0.0473,0.0293,0.2529,0.8425]])
+sigma = np.array([[0.0100,0.2000,0.0100,0.2000,0.0100,0.2000]])
+inter_par,yp1 = regressionparametarization(xi,yi, sigma, inter_par)
+print('yp',yp1)
 print('inter_par.v')
 print(inter_par.v)
 print('inter_par.w')
 print(inter_par.w)
-
-import matplotlib.pyplot as plt
-
-
-
-xx = np.arange(0, 1.05, 0.05)
-xx = pd.DataFrame(xx).values
-yy= np.zeros((len(xx),1))
-yr= np.zeros((len(xx),1))
-
-for ii in range(len(xx)):
-    yy[ii] = interpolate_val( xx[ii],inter_par)
-yr = funr(xx.T)
-# ground truth
-# yr =
-yr = yr[:,np.newaxis]
-
-plt.figure()
-plt.plot(xx, yy, '--')
-plt.plot(xx, yr, '-')
-plt.plot(xi, yi, '*')
-# example variable error bar values
-plt.errorbar(xi[0], yi[0], yerr=sigma[0], linestyle="None")
-plt.title("modeling the error function")
-plt.show()
