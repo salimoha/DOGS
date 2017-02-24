@@ -399,27 +399,27 @@ def interpolate_grad(x, inter_par):
 
         return g
 
-    def inter_min(x, inter_par, Ain=[], bin=[]):
-        # %find the minimizer of the interpolating function starting with x
-        rho = 0.9  # backtracking paramtere
-        n = x.shape[0]
-        #     start the serafh method
-        iter = 0
-        x0 = np.zeros((n, 1))
-        # while iter < 10:
-        H = np.zeros((n, n))
-        g = np.zeros((n, 1))
-        y = interpolate_val(x, inter_par)
-        g = interpolate_grad(x, inter_par)
+def inter_min(x, inter_par, Ain=[], bin=[]):
+    # %find the minimizer of the interpolating function starting with x
+    rho = 0.9  # backtracking paramtere
+    n = x.shape[0]
+    #     start the serafh method
+    iter = 0
+    x0 = np.zeros((n, 1))
+    # while iter < 10:
+    H = np.zeros((n, n))
+    g = np.zeros((n, 1))
+    y = interpolate_val(x, inter_par)
+    g = interpolate_grad(x, inter_par)
         # H = interpolate_hessian(x, inter_par)
         # Perform the Hessian modification
         # H = modichol(H, 0.01, 20);
         # H = (H + H.T)/2.0
         #         optimizaiton for finding hte right direction
-        objfun3 = lambda x: (interpolate_val(x, inter_par))
-        grad_objfun3 = lambda x: interpolate_grad(x, inter_par)
-        res = minimize(objfun3, x0, method='L-BFGS-B', jac=grad_objfun3, options={'gtol': 1e-6, 'disp': True})
-        return res.x, res.fun
+    objfun3 = lambda x: (interpolate_val(x, inter_par))
+    grad_objfun3 = lambda x: interpolate_grad(x, inter_par)
+    res = minimize(objfun3, x0, method='L-BFGS-B', jac=grad_objfun3, options={'gtol': 1e-6, 'disp': True})
+    return res.x, res.fun
 
 
 
