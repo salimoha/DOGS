@@ -5,7 +5,7 @@ import Utils
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
-#%%
+
 np.set_printoptions(linewidth=200, precision=5, suppress=True)
 pd.options.display.max_rows = 20
 pd.options.display.expand_frame_repr = False
@@ -16,18 +16,22 @@ pd.options.display.expand_frame_repr = False
 # dimenstion is n
 n = 1
 # the noise level
-sigma0 = 0.01
-
+sigma0 = 0.3
+fun_arg = 3
 # truth function 
 # quadratic:
-funr = lambda x: 5*norm(x-0.3)**2
-fun = lambda x: 5*norm(x-0.3)**2 + sigma0 * np.random.rand()
-
+if fun_arg == 1:
+    funr = lambda x: 5*norm(x-0.3)**2
+    fun = lambda x: 5*norm(x-0.3)**2 + sigma0 * np.random.randn()
 # schewfel
-#funr = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x)))))[0] / 250
-#fun = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x)))))[0] / 250 + sigma0 * np.random.rand()
-
-# rastinginn function
+elif fun_arg == 2:
+    funr = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x)))))[0] / 250
+    fun = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x)))))[0] / 250 + sigma0 * np.random.randn()
+# rastinginn
+elif fun_arg == 3:
+    A = 3
+    funr = lambda x: sum((x-0.7) ** 2 - A * np.cos(2*np.pi*(x-0.7)))[0]
+    fun = lambda x: sum((x-0.7) ** 2 - A * np.cos(2*np.pi*(x-0.7)))[0] + sigma0 * np.random.randn()
 
 lb = np.zeros((n,1))
 ub = np.ones((n,1))
@@ -36,7 +40,7 @@ Ain = np.concatenate((np.identity((n)), -np.identity((n))), axis=0)
 Bin = np.concatenate((np.ones((n,1)), np.zeros((n,1))),axis=0)
 
 plot_index = 1
-iter_max = 50  # maximum number of iterations:
+iter_max = 200  # maximum number of iterations:
 
 # interpolation strategy:
 inter_method = 1  # polyharmonic spline
@@ -174,7 +178,7 @@ for ff in range(nff):
             ax1.set_title("x1 and x2")
             
 # plot estimate regret and datalength
-if 1:
+if 0:
     plt.figure()
     plt.plot(range(1,iter_max+1),estimate[0],'-')
     plt.title("estimate")
@@ -184,22 +188,42 @@ if 1:
     plt.figure()
     plt.plot(range(1,iter_max+1),datalength[0],'--')
     plt.title("datalength")
+# plot the scaled schewfel function for 1D
+
+
+if n == 1:
+    plt.figure()
+    x = np.arange(0,1,0.001)
+    y = np.arange(0,1,0.001)
+    for i in range(len(x)):
+        y[i] = funr(np.array([[x[i]]])) 
+    plt.plot(x,y,'b-')
+    plt.grid()
+    plt.errorbar(xE[0],yE,yerr=SigmaT,fmt='o')
+    
+# funr = lambda x: -sum(np.multiply(500*x,np.sin(np.sqrt(abs(500*x)))))[0] / 250
 
 # plot the contourf
 if n == 2:
     plt.figure()
-    xlist = np.linspace(0,1.0,200)
-    ylist = np.linspace(0,1.0,200)
+    xlist = np.linspace(-1.0,2.0,200)
+    ylist = np.linspace(-1.0,2.0,200)
     X,Y = np.meshgrid(xlist,ylist)
-    Z = (-np.multiply(X,np.sin(np.sqrt(abs(500*X)))) - np.multiply(Y,np.sin(np.sqrt(abs(500*Y)))))/250
+    if fun_arg == 1:
+        Z = 5 * norm( X - 0.3 + Y - 0.3)**2
+    elif fun_arg == 2:
+        Z = (-np.multiply(X,np.sin(np.sqrt(abs(500*X)))) - np.multiply(Y,np.sin(np.sqrt(abs(500*Y)))))/250
+    elif fun_arg == 3:
+        Z = (X ** 2 - A * np.cos(2 * np.pi * X) + Y ** 2 - A * np.cos(2 * np.pi * Y))
     cp = plt.contourf(X,Y,Z,cmap='gray')
     plt.colorbar(cp)
-    plt.plot(xE[0,-5:],xE[1,-5:],'wo')
-    plt.plot(xE[0,:-6],xE[1,:-6],'bo')
+    p = 2
+    plt.plot(xE[0,-p:],xE[1,-p:],'wo')
+    plt.plot(xE[0,:-p],xE[1,:-p],'bo')
 
-    
+
 ################################################################################################################
-#square
+
 # 1.	Intializaiton of the vertices
 # 2.	Construct the Delaunay triangulations of S
 # 3.	Constrict an appropriate regression model of S. calculate the search function as sc(x) = p(x)-Ke(x).

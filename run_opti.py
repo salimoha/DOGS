@@ -52,5 +52,6 @@ while stop == 0
     yE = pd.DataFrame(npyEval)
     yE.to_csv("surr_yi_new")
     yE.to_csv("Yall.csv", mode='w+') # TODO: write the yi to the end of function
-
+    with open("Yall.csv","a") as my_file:
+        yE.to_csv(my_file,index=False)
     stop = np.load("optStop.txt")
