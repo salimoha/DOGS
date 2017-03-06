@@ -66,8 +66,8 @@ def fun(s,r,b,stepCnt = 1000, dt = 0.01):
     ys = np.empty((stepCnt + 1,))
     zs = np.empty((stepCnt + 1,))
     # Setting initial values
-    # xs[0], ys[0], zs[0] = (0., 1., 1.05)
-    xs[0], ys[0], zs[0] = np.random.rand(3)
+    xs[0], ys[0], zs[0] = (0., 1., 1.05)
+    # xs[0], ys[0], zs[0] = np.random.rand(3)
     # Stepping through "time".
     for i in range(stepCnt):
         # Derivatives of the X, Y, Z state
@@ -77,46 +77,52 @@ def fun(s,r,b,stepCnt = 1000, dt = 0.01):
         zs[i + 1] = zs[i] + (z_dot * dt)
     # mu =np.mean(zs)
     # mu = np.vstack((mu,np.mean(zs)))
-    return np.mean(zs)/25.2696 +np.mean(zs**2)/694.1202
+    # return np.linalg.norm(np.mean(zs)-25.2696)**2 #+ np.linalg.norm(np.mean(zs**2)-694.1202)**2
+    # return np.linalg.norm(np.mean(zs)-23.6066)**2 #+ np.linalg.norm(np.mean(zs**2)-694.1202)**2
+    return np.linalg.norm(np.mean(zs)-23.6066)**2 + np.linalg.norm(np.mean(zs**2)-23.6066**2-0.00250**2)**2
 
 s,r,b =(10.,28.,2.667)
-T = int(1e4)
-h=0.01
+T = int(1e5)
+h=2.5*1e-4
 # finding the upper bounds
 
 ########### beta
 
 mb =fun(s,r,b,T,h)
-upb, lob = 12,0.3
-for bb in np.arange(lob,upb,0.1):
+upb, lob,dd = 4,1,0.05
+for bb in np.arange(lob,upb,dd):
     mb = np.vstack((mb,fun(s, r, bb, T, h)))
 
 fig = plt.figure()
-plt.plot(np.arange(lob,upb,0.1),mb[1:])
+plt.plot(np.arange(lob,upb,dd),mb[1:])
 plt.plot(np.array([b]),mb[0],'*')
-#plt.show()
+plt.xlabel('beta')
+plt.show()
 
 
 ########### sigma
+# T=int(1e5)
 ms =fun(s,r,b,T,h)
-upb, lob = 14,1
-for ss in np.arange(lob,upb,0.1):
+upb, lob,dd = 11,9,0.02
+for ss in np.arange(lob,upb,dd):
     ms = np.vstack((ms,fun(ss, r, b, T, h)))
 
 fig = plt.figure()
-plt.plot(np.arange(lob,upb,0.1),ms[1:])
+plt.plot(np.arange(lob,upb,dd),ms[1:])
 plt.plot(np.array([s]),ms[0],'*')
-# plt.show()
+plt.xlabel('sigma')
+plt.show()
 
 ########### r
 mr =fun(s,r,b,T,h)
-upb, lob = 20,30
-for rr in np.arange(lob,upb,0.1):
+upb, lob, dd = 30,20, 0.1
+for rr in np.arange(lob,upb,dd):
     mr = np.vstack((mr,fun(s, rr, b, T, h)))
 
 fig = plt.figure()
-plt.plot(np.arange(lob,upb,0.1),mr[1:])
+plt.plot(np.arange(lob,upb,dd),mr[1:])
 plt.plot(np.array([r]),mr[0],'*')
+plt.xlabel('r')
 plt.show()
 
 # a = objfun(10,28,2.667,T,h); print(a)
